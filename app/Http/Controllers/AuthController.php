@@ -128,12 +128,14 @@ class AuthController extends Controller
             ], 404);
         }
 
+        /* DISABLED to allow multiple uses of the same invite
         if ($invite->isUsed()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invite already used'
             ], 404);
         }
+        */
 
         $invite->markAsUsed();
 
