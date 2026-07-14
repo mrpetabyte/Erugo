@@ -134,7 +134,7 @@ class UploadsController extends Controller
     // Use retry loop to handle race condition where post-finish hooks
     // may still be processing when this endpoint is called (especially with many small files)
     $expectedCount = count($request->uploadIds);
-    $maxRetries = 5;
+    $maxRetries = 20;
     $sessions = null;
 
     for ($attempt = 0; $attempt < $maxRetries; $attempt++) {
