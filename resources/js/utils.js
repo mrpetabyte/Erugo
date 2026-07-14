@@ -14,7 +14,7 @@ const simpleUUID = () => {
 
 const niceFileSize = size => {
   //return in most readable format
-  if (size < 1024) return `${size} bytes`
+  if (size === 0) return '0.00 MB'
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
   if (size < 1024 * 1024 * 1024) return `${(size / 1024 / 1024).toFixed(2)} MB`
   return `${(size / 1024 / 1024 / 1024).toFixed(2)} GB`
@@ -28,6 +28,15 @@ const niceFileType = type => {
   //split . and take the last part
   mimeType = mimeType.split('.').pop()
   return mimeType.toLowerCase()
+}
+
+const niceTime = seconds => {
+    if (seconds < 0) return '0s'
+    if (seconds < 60) return `${Math.round(seconds)}s`
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
+    const h = Math.floor(seconds / 3600)
+    const m = Math.round((seconds % 3600) / 60)
+    return `${h}h ${m}m`
 }
 
 const niceExpirationDate = date => {
@@ -51,7 +60,7 @@ const timeUntilExpiration = date => {
 }
 
 const getApiUrl = () => {
-  return window.location.origin 
+  return window.location.origin
 }
 
 const getTusdUrl = () => {
@@ -115,4 +124,4 @@ const convertToRealType = value => {
   return value
 }
 
-export { niceFileSize, niceFileType, niceExpirationDate, timeUntilExpiration, getApiUrl, getTusdUrl, simpleUUID, niceFileName, niceDate, niceString, niceNumber, mapSettings }
+export { niceFileSize, niceFileType, niceExpirationDate, niceTime, timeUntilExpiration, getApiUrl, getTusdUrl, simpleUUID, niceFileName, niceDate, niceString, niceNumber, mapSettings }
