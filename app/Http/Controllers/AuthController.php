@@ -50,11 +50,10 @@ class AuthController extends Controller
 
         if (!$user->active) {
             Auth::logout();
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Account is disabled'
-                ], 403);
-            }
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Account is disabled'
+            ], 403);
         }
 
         return $this->respondWithToken($user);

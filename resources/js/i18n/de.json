@@ -413,8 +413,8 @@
   },
   "processing_uploaded_files": "Verarbeite hochgeladene Dateien",
   "reverse_invite_send": {
-    "error": "Reverse Share-Einladung kann nicht gesendet werden",
-    "success": "Einladung zur umgekehrten Freigabe gesendet!"
+    "error": "Dateifreigabe-Einladung konnte nicht gesendet werden",
+    "success": "Einladung zur Dateifreigabe gesendet!"
   },
   "settings": {
     "about": {
@@ -635,7 +635,7 @@
         "downloads_title": "Download-Aktivität",
         "file_types_description": "Aufschlüsselung der Dateien nach Kategorie über alle Freigaben hinweg.",
         "file_types_title": "Dateityp-Verteilung",
-        "guest_users_description": "Benutzer, die über umgekehrte Einladungen zur gemeinsamen Nutzung erstellt wurden.",
+        "guest_users_description": "Benutzer, die für Dateianforderungen automatisch erstellt wurden.",
         "guest_users_title": "Gast-Benutzer",
         "shares_description": "Übersicht über alle Freigaben im System, einschließlich des aktuellen Status.",
         "shares_title": "Freigabe-Statistik",
@@ -697,8 +697,8 @@
       "allow_chunked_uploads_description": "Der Chunked-Upload-Modus unterteilt Dateien in kleinere Segmente, die nacheinander übertragen werden. Diese Methode ist zwar bei kleineren Dateien etwas langsamer als der direkte Upload, bietet aber bei der Übertragung großer Dateien mehr Stabilität und Zuverlässigkeit. Chunked Uploads unterstützen die Verfolgung des Fortschritts und ermöglichen es dem Benutzer, die Übertragung manuell anzuhalten und fortzusetzen. Dies ist ideal für Dateien über 100 MB oder bei instabilen Netzwerkverbindungen.",
       "allow_direct_uploads": "Direkten Upload-Modus zulassen",
       "allow_direct_uploads_description": "Beim direkten Upload werden die Dateien in einer einzigen, ununterbrochenen Anfrage übertragen. Während diese Methode für die meisten Dateien die schnellsten Übertragungsgeschwindigkeiten bietet, kann es bei extrem großen Dateien zu Stabilitätsproblemen oder Timeouts kommen. Für eine optimale Leistung bei Dateien, die größer als 100 MB sind, ist der Upload in Teilen die bessere Option.",
-      "allow_reverse_shares": "Umgekehrte Freigaben zulassen",
-      "allow_reverse_shares_description": "Legt fest, ob Ihre registrierten Benutzer die Erlaubnis haben sollen, umgekehrte Freigabeanforderungen zu senden. Diese Anfragen geben externen Personen einen einmaligen Upload-Link, der es ihnen ermöglicht, Dateien direkt an den registrierten Benutzer zu senden, der die Anfrage initiiert hat.\n\n\n\n\n",
+      "allow_reverse_shares": "Dateianforderungen zulassen",
+      "allow_reverse_shares_description": "Legt fest, ob Ihre registrierten Benutzer die Erlaubnis haben sollen, Dateianforderungen zu senden. Diese Anfragen geben externen Personen einen einmaligen Upload-Link, der es ihnen ermöglicht, Dateien direkt an den registrierten Benutzer zu senden, der die Anfrage initiiert hat.\n\n\n\n\n",
       "application_name": "Name der Anwendung",
       "application_name_description": "Passen Sie den Anzeigenamen der Anwendung an, der in der Titelleiste, in Dialogfeldern und anderen Oberflächenelementen erscheint. Dies trägt dazu bei, ein konsistentes Branding während der gesamten Benutzererfahrung zu erhalten.",
       "application_url": "URL der Anwendung",
@@ -787,7 +787,7 @@
       "pattern_token_uppercase": "Großbuchstabe (A-Z)",
       "provider_trust_warning": "Warnung: Vertrauen in Auth Provider",
       "provider_trust_warning_description": "Stellen Sie sicher, dass Sie nur Authentifizierungsanbieter konfigurieren und aktivieren, denen Sie vertrauen. Authentifizierungsanbieter verfügen über erweiterte Zugriffsrechte auf Ihre Anwendungs- und Benutzerdaten. Das Hinzufügen von nicht vertrauenswürdigen oder gefährdeten Anbietern kann zu unbefugtem Zugriff, Datenverletzungen oder Kontoübernahmen führen.",
-      "reverse_shares": "Umgekehrte Freigaben",
+      "reverse_shares": "Dateianforderungen",
       "select_auth_provider": "Wählen Sie einen Autorisierungsanbieter",
       "self_registration": "Selbstregistrierung",
       "self_registration_allow_any_domain": "Registrierung von jeder E-Mail-Domain aus zulassen",
@@ -872,7 +872,7 @@
       "manage": "Verwalten",
       "myProfile": "Mein Konto",
       "myShares": "Meine Freigaben",
-      "reverse_invite": "Umgekehrte Freigabeanforderung erstellen",
+      "reverse_invite": "Dateianforderung erstellen",
       "share": {
         "password_protect": "Freigabe mit Passwort schützen"
       },
