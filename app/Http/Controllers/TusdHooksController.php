@@ -15,7 +15,7 @@ class TusdHooksController extends Controller
     /**
      * Handle incoming tusd hook requests
      * tusd sends different hook types: pre-create, post-create, post-receive, post-finish, post-terminate
-     * 
+     *
      * Security: This endpoint should only be called by the tusd process.
      * We validate the request comes from localhost or internal Docker network IPs.
      */
@@ -30,7 +30,7 @@ class TusdHooksController extends Controller
             '127.0.0.1', // Localhost IPv4
             '::1', // Localhost IPv6
         ];
-        
+
         $isAllowed = false;
         foreach ($allowedNetworks as $network) {
             if (str_starts_with($clientIp, $network)) {
@@ -38,7 +38,7 @@ class TusdHooksController extends Controller
                 break;
             }
         }
-        
+
         if (!$isAllowed) {
             Log::warning('tusd hook rejected: unauthorized source IP', [
                 'ip' => $clientIp
@@ -132,7 +132,7 @@ class TusdHooksController extends Controller
                 if ($totalSizeAfterUpload > $maxUploadSize) {
                     $maxSizeFormatted = $this->formatBytes($maxUploadSize);
                     $currentSizeFormatted = $this->formatBytes($pendingUploadsSize);
-                    
+
                     Log::warning('tusd pre-create: Cumulative upload size exceeds max', [
                         'user_id' => $user->id,
                         'file_size' => $fileSize,
@@ -226,7 +226,7 @@ class TusdHooksController extends Controller
             $filesize = $payload['Event']['Upload']['Size'] ?? 0;
             $filetype = $metadata['filetype'] ?? 'application/octet-stream';
             $uploadId = $payload['Event']['Upload']['ID'] ?? null;
-            
+
             // Security: Validate upload ID is a safe hex string
             if (!$uploadId || !preg_match('/^[a-f0-9]+$/i', $uploadId)) {
                 Log::warning('tusd post-create: Invalid upload ID format', [
@@ -272,7 +272,7 @@ class TusdHooksController extends Controller
     {
         try {
             $uploadId = $payload['Event']['Upload']['ID'] ?? null;
-            
+
             // Security: Validate upload ID is a safe hex string (tusd generates 32-char hex IDs)
             if (!$uploadId || !preg_match('/^[a-f0-9]+$/i', $uploadId)) {
                 Log::warning('tusd post-finish: Invalid upload ID format', [
@@ -280,7 +280,7 @@ class TusdHooksController extends Controller
                 ]);
                 return response()->json(['ok' => true]);
             }
-            
+
             $metadata = $payload['Event']['Upload']['MetaData'] ?? [];
             $filename = $metadata['filename'] ?? 'unknown';
             $filesize = $payload['Event']['Upload']['Size'] ?? 0;
@@ -422,7 +422,7 @@ class TusdHooksController extends Controller
             $fileIds = [];
             foreach ($manifest['files'] as $fileInfo) {
                 $filePath = $fileInfo['path'];
-                
+
                 // Sanitize the file path to prevent path traversal attacks
                 // Remove ../ sequences and normalize path
                 $safePath = $this->sanitizeBundlePath($filePath);
@@ -433,15 +433,15 @@ class TusdHooksController extends Controller
                     ]);
                     continue;
                 }
-                
+
                 $extractedFilePath = $extractDir . '/' . $safePath;
-                
+
                 // Verify the resolved path is within the extraction directory
                 $resolvedPath = realpath($extractedFilePath);
                 $resolvedExtractDir = realpath($extractDir);
-                
+
                 if ($resolvedPath === false || $resolvedExtractDir === false ||
-                    strpos($resolvedPath, $resolvedExtractDir) !== 0) {
+                    ($resolvedPath !== $resolvedExtractDir && strpos($resolvedPath, $resolvedExtractDir . DIRECTORY_SEPARATOR) !== 0)) {
                     Log::warning('tusd post-finish: Path traversal attempt in bundle', [
                         'upload_id' => $uploadId,
                         'file_path' => $filePath,
@@ -519,7 +519,7 @@ class TusdHooksController extends Controller
     {
         try {
             $uploadId = $payload['Event']['Upload']['ID'] ?? null;
-            
+
             // Security: Validate upload ID is a safe hex string
             if (!$uploadId || !preg_match('/^[a-f0-9]+$/i', $uploadId)) {
                 Log::warning('tusd post-terminate: Invalid upload ID format', [
@@ -565,26 +565,26 @@ class TusdHooksController extends Controller
     {
         // Normalize directory separators
         $path = str_replace('\\', '/', $path);
-        
+
         // Check for dangerous patterns before sanitization
         if (strpos($path, '..') !== false) {
             return null;
         }
-        
+
         // Remove leading slashes
         $path = ltrim($path, '/');
-        
+
         // Remove null bytes
         $path = str_replace("\0", '', $path);
-        
+
         // Clean up double slashes
         $path = preg_replace('/\/+/', '/', $path);
-        
+
         // If empty after sanitization, reject
         if (empty($path)) {
             return null;
         }
-        
+
         return $path;
     }
 
