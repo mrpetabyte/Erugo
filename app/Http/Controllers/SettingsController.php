@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +12,26 @@ use App\Utils\FileHelper;
 use App\Services\SettingsService;
 class SettingsController extends Controller
 {
+    /**
+     * Groups whose settings may only be read by administrators.
+     * These contain credentials (SMTP passwords, etc.) that must not be
+     * exposed to ordinary authenticated users.
+     */
+    private const ADMIN_ONLY_GROUPS = ['system', 'system.smtp', 'system.auth'];
+
+    /**
+     * Return true when the given group string falls under an admin-only prefix.
+     */
+    private function groupRequiresAdmin(string $group): bool
+    {
+        foreach (self::ADMIN_ONLY_GROUPS as $restricted) {
+            if ($group === $restricted || str_starts_with($group, $restricted . '.')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function write(Request $request)
     {
         $request->validate([
@@ -25,7 +46,7 @@ class SettingsController extends Controller
         foreach ($request->settings as $settingData) {
             try {
                 $setting = Setting::where('key', $settingData['key'])->first();
-                
+
                 if (!$setting) {
                     throw new \Exception('Setting does not exist');
                 }
@@ -73,6 +94,14 @@ class SettingsController extends Controller
                 'message' => 'Setting not found',
             ], 404);
         }
+
+        if ($this->groupRequiresAdmin($setting->group) && !Auth::user()?->admin) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden',
+            ], 403);
+        }
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -83,6 +112,14 @@ class SettingsController extends Controller
 
     public function readGroup(Request $request, $group)
     {
+        // Strip trailing wildcard so we can check the base group name
+        $baseGroup = rtrim($group, '.*');
+        if ($this->groupRequiresAdmin($baseGroup) && !Auth::user()?->admin) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Forbidden',
+            ], 403);
+        }
 
         $query = Setting::query();
 
@@ -118,7 +155,7 @@ class SettingsController extends Controller
             // Map validation rule to error code for frontend translation
             $failedRules = $validator->failed();
             $errorCode = 'validation_failed';
-            
+
             if (isset($failedRules['logo']['Max'])) {
                 $errorCode = 'file_too_large';
             } elseif (isset($failedRules['logo']['Mimes'])) {
@@ -138,11 +175,11 @@ class SettingsController extends Controller
         }
 
         $logo = $request->file('logo');
-        
+
         try {
             // Store the logo as logo.png in storage/app/public/images (symlinked to public/images)
             $stored = Storage::disk('public')->put('images/logo.png', file_get_contents($logo));
-            
+
             if (!$stored) {
                 Log::error('Failed to store logo file');
                 return response()->json([
@@ -159,7 +196,7 @@ class SettingsController extends Controller
             Log::error('Logo upload error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to save logo: ' . $e->getMessage(),
+                'message' => 'Failed to save logo',
             ], 500);
         }
     }
@@ -175,7 +212,7 @@ class SettingsController extends Controller
                     'message' => 'Default logo not found',
                 ], 404);
             }
-            
+
             // Copy the default logo to restore it
             $defaultLogo = Storage::disk('public')->get('images/_default-logo.png');
             Storage::disk('public')->put('images/logo.png', $defaultLogo);
@@ -186,7 +223,7 @@ class SettingsController extends Controller
                 $logoSetting->previous_value = $logoSetting->value;
                 $logoSetting->value = 'erugo-logo.png';
                 $logoSetting->save();
-                
+
                 // Clear settings cache after modifying setting
                 app(SettingsService::class)->clearCache();
             }
@@ -199,7 +236,7 @@ class SettingsController extends Controller
             Log::error('Logo reset error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to reset logo: ' . $e->getMessage(),
+                'message' => 'Failed to reset logo',
             ], 500);
         }
     }
@@ -214,7 +251,7 @@ class SettingsController extends Controller
             // Map validation rule to error code for frontend translation
             $failedRules = $validator->failed();
             $errorCode = 'validation_failed';
-            
+
             if (isset($failedRules['favicon']['Max'])) {
                 $errorCode = 'file_too_large';
             } elseif (isset($failedRules['favicon']['Mimes'])) {
@@ -235,10 +272,10 @@ class SettingsController extends Controller
 
         $favicon = $request->file('favicon');
         $extension = strtolower($favicon->getClientOriginalExtension());
-        
+
         // Always store as favicon.png or favicon.svg
         $filename = 'favicon.' . $extension;
-        
+
         // Delete any existing favicon files first
         if (Storage::disk('public')->exists('favicon.png')) {
             Storage::disk('public')->delete('favicon.png');
@@ -246,7 +283,7 @@ class SettingsController extends Controller
         if (Storage::disk('public')->exists('favicon.svg')) {
             Storage::disk('public')->delete('favicon.svg');
         }
-        
+
         // Store the new favicon
         Storage::disk('public')->put($filename, file_get_contents($favicon));
 
@@ -262,7 +299,7 @@ class SettingsController extends Controller
     public function deleteFavicon()
     {
         $deleted = false;
-        
+
         if (Storage::disk('public')->exists('favicon.png')) {
             Storage::disk('public')->delete('favicon.png');
             $deleted = true;
@@ -285,26 +322,26 @@ class SettingsController extends Controller
             $path = Storage::disk('public')->path('favicon.png');
             return response()->file($path, ['Content-Type' => 'image/png']);
         }
-        
+
         if (Storage::disk('public')->exists('favicon.svg')) {
             $path = Storage::disk('public')->path('favicon.svg');
             return response()->file($path, ['Content-Type' => 'image/svg+xml']);
         }
-        
+
         // Fall back to default icon.svg
         $defaultPath = public_path('icon.svg');
         if (file_exists($defaultPath)) {
             return response()->file($defaultPath, ['Content-Type' => 'image/svg+xml']);
         }
-        
+
         abort(404);
     }
 
     public function hasFavicon()
     {
-        $hasCustomFavicon = Storage::disk('public')->exists('favicon.png') || 
+        $hasCustomFavicon = Storage::disk('public')->exists('favicon.png') ||
                            Storage::disk('public')->exists('favicon.svg');
-        
+
         $filename = null;
         if (Storage::disk('public')->exists('favicon.png')) {
             $filename = 'favicon.png';

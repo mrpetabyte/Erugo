@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, defineExpose, inject, computed, nextTick, watch } from 'vue'
+import DOMPurify from 'dompurify'
 import {
   Settings,
   Tag,
@@ -94,20 +95,20 @@ const generatePatternPreview = () => {
     patternPreview.value = ''
     return
   }
-  
+
   // Client-side pattern preview generation
   let result = ''
   const length = pattern.length
   let i = 0
-  
+
   const DIGITS = '0123456789'
   const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
   const HEX = '0123456789ABCDEF'
   const ALPHANUMERIC = DIGITS + UPPERCASE + LOWERCASE
-  
+
   const randomChar = (charset) => charset[Math.floor(Math.random() * charset.length)]
-  
+
   const expandRange = (start, end) => {
     const chars = []
     const startCode = start.charCodeAt(0)
@@ -118,7 +119,7 @@ const generatePatternPreview = () => {
     }
     return chars
   }
-  
+
   const expandCharClass = (content) => {
     const chars = []
     let j = 0
@@ -140,10 +141,10 @@ const generatePatternPreview = () => {
     }
     return [...new Set(chars)]
   }
-  
+
   while (i < length) {
     const char = pattern[i]
-    
+
     // Handle escape sequences
     if (char === '\\' && i + 1 < length) {
       const nextChar = pattern[i + 1]
@@ -156,7 +157,7 @@ const generatePatternPreview = () => {
       i++
       continue
     }
-    
+
     // Handle character classes [...]
     if (char === '[') {
       const closePos = pattern.indexOf(']', i + 1)
@@ -173,7 +174,7 @@ const generatePatternPreview = () => {
       i++
       continue
     }
-    
+
     // Handle special tokens
     if (char === '#') {
       result += randomChar(DIGITS)
@@ -200,12 +201,12 @@ const generatePatternPreview = () => {
       i++
       continue
     }
-    
+
     // Literal character
     result += char
     i++
   }
-  
+
   patternPreview.value = result
 }
 
@@ -266,7 +267,13 @@ const loadSettings = async () => {
 
 const loadAuthProviders = async () => {
   try {
-    authProviders.value = await getAuthProviders()
+    const raw = await getAuthProviders()
+    authProviders.value = raw.map((p) => ({
+      ...p,
+      icon: p.icon
+        ? DOMPurify.sanitize(p.icon, { USE_PROFILES: { svg: true, svgFilters: true } })
+        : null,
+    }))
     authProviders.value.forEach((authProvider) => {
       Object.keys(authProvider.provider_config).forEach((configKey) => {
         hideSecrets.value[`${authProvider.id}_${configKey}`] = mightBeSecret(configKey)
@@ -329,7 +336,7 @@ const handleDeleteBackup = async (filename) => {
   if (!confirmed) {
     return
   }
-  
+
   backupDeleting.value = filename
   try {
     await deleteBackup(filename)
@@ -391,7 +398,7 @@ const saveSettings = async () => {
     saving.value = false
     toast.success(t.value('settings.settingsSavedSuccessfully'))
     await loadSettings()
-    
+
     // Notify other components that settings have changed
     notifySettingsChanged()
   } catch (error) {
@@ -864,7 +871,7 @@ const handleDeleteAuthProvider = async (id) => {
                 <!-- Hidden decoy fields to prevent browser password save prompts -->
                 <input type="text" name="prevent_autofill_1" style="display:none" tabindex="-1" autocomplete="off" />
                 <input type="password" name="prevent_autofill_2" style="display:none" tabindex="-1" autocomplete="off" />
-                
+
                 <div class="setting-group-body-item">
                   <label for="smtp_host">{{ $t('settings.system.smtp_host') }}</label>
                   <input type="text" id="smtp_host" v-model="settings.smtp_host" />
@@ -1186,8 +1193,8 @@ const handleDeleteAuthProvider = async (id) => {
               <div class="setting-group-body">
                 <div class="setting-group-body-item">
                   <div class="backup-actions mb-3">
-                    <button 
-                      @click="handleCreateBackup" 
+                    <button
+                      @click="handleCreateBackup"
                       :disabled="backupCreating"
                       class="create-backup-button"
                     >
@@ -1195,8 +1202,8 @@ const handleDeleteAuthProvider = async (id) => {
                       <Plus v-else />
                       {{ $t('settings.system.backups.create_backup') }}
                     </button>
-                    <button 
-                      @click="loadBackups" 
+                    <button
+                      @click="loadBackups"
                       :disabled="backupsLoading"
                       class="refresh-backups-button"
                     >
@@ -1211,11 +1218,11 @@ const handleDeleteAuthProvider = async (id) => {
                     <Loader2 class="spinner" />
                     {{ $t('settings.system.backups.loading') }}
                   </div>
-                  
+
                   <div v-else-if="backups.length === 0" class="no-backups">
                     <p>{{ $t('settings.system.backups.no_backups') }}</p>
                   </div>
-                  
+
                   <div v-else class="backups-list">
                     <table class="backups-table">
                       <thead>
@@ -1232,7 +1239,7 @@ const handleDeleteAuthProvider = async (id) => {
                           <td>{{ formatBackupDate(backup.created_at) }}</td>
                           <td>{{ backup.size_formatted }}</td>
                           <td class="backup-actions-cell">
-                            <button 
+                            <button
                               @click="handleDownloadBackup(backup.filename)"
                               :disabled="backupDownloading === backup.filename"
                               class="icon-only"
@@ -1241,7 +1248,7 @@ const handleDeleteAuthProvider = async (id) => {
                               <Loader2 v-if="backupDownloading === backup.filename" class="spinner" />
                               <Download v-else />
                             </button>
-                            <button 
+                            <button
                               @click="handleDeleteBackup(backup.filename)"
                               :disabled="backupDeleting === backup.filename"
                               class="icon-only delete-button secondary"
@@ -1452,13 +1459,13 @@ const handleDeleteAuthProvider = async (id) => {
     padding: 10px 15px;
     border-radius: var(--panel-border-radius);
     font-family: monospace;
-    
+
     code {
       flex: 1;
       font-size: 1rem;
       word-break: break-all;
     }
-    
+
     .refresh-preview {
       background: transparent;
       border: none;
@@ -1472,7 +1479,7 @@ const handleDeleteAuthProvider = async (id) => {
       align-items: center;
       justify-content: center;
       transition: transform 0.2s ease;
-      
+
       &:hover {
         transform: rotate(180deg);
       }
@@ -1482,16 +1489,16 @@ const handleDeleteAuthProvider = async (id) => {
 
 .pattern-syntax-help {
   margin-top: 1rem;
-  
+
   .syntax-list {
     list-style: none;
     padding: 0;
     margin: 0.5rem 0;
     font-size: 0.85rem;
-    
+
     li {
       padding: 4px 0;
-      
+
       code {
         background: var(--panel-section-background-color-alt);
         padding: 2px 6px;
@@ -1508,12 +1515,12 @@ const handleDeleteAuthProvider = async (id) => {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  
+
   button {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    
+
     svg {
       width: 16px;
       height: 16px;
@@ -1530,7 +1537,7 @@ const handleDeleteAuthProvider = async (id) => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  
+
   svg {
     width: 20px;
     height: 20px;
@@ -1541,40 +1548,40 @@ const handleDeleteAuthProvider = async (id) => {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  
+
   th, td {
     padding: 10px 12px;
     text-align: left;
     border-bottom: 1px solid var(--input-border-color);
   }
-  
+
   th {
     font-weight: 600;
     color: var(--panel-text-color);
     background: var(--panel-section-background-color-alt);
   }
-  
+
   td {
     color: var(--panel-text-color);
   }
-  
+
   .backup-filename {
     font-family: monospace;
     font-size: 0.85rem;
     word-break: break-all;
   }
-  
+
   .backup-actions-cell {
     white-space: nowrap;
     width: 1px;
-    
+
     button {
       margin-right: 5px;
-      
+
       &.delete-button:hover {
         color: var(--color-danger);
       }
-      
+
       svg {
         width: 16px;
         height: 16px;
