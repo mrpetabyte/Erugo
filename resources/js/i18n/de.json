@@ -4,14 +4,14 @@
   "Add Folders": "Ordner hinzufügen",
   "Add Recipient": "Empfänger hinzufügen",
   "Email Verification": "E-Mail-Verifizierung",
-  "Message to share recipients (optional)": "Nachricht an Empfänger (optional)",
+  "Message to share recipients (optional)": "Nachricht an den/die Empfänger (optional)",
   "No files added yet": "Noch keine Dateien hinzugefügt",
   "No recipients": "Keine Empfänger",
   "Password Reset": "Passwort zurücksetzen",
   "Powered by": "Powered by",
   "Processing uploaded files": "Verarbeite hochgeladene Dateien",
-  "Reverse Share": "Umgekehrte Freigabe",
-  "Reverse Share Invite": "Einladung zur umgekehrten Freigabe",
+  "Reverse Share": "Dateianforderung",
+  "Reverse Share Invite": "Einladung zur Freigabe",
   "Share Created": "Freigabe erstellt",
   "Share Deleted Warning": "Warnung: Freigabe gelöscht",
   "Share Deletion Warning": "Warnung vor Löschung der Freigabe",
@@ -80,7 +80,7 @@
     "welcome": "Willkommen"
   },
   "button": {
-    "reverse_share_invite": "Umgekehrte Freigabe erstellen",
+    "reverse_share_invite": "Dateianforderung erstellen",
     "reverse_share_invite_send": "Anfrage senden",
     "share": {
       "password_protect": "Passwortschutz"
@@ -967,7 +967,7 @@
       "extend": "Verlängern"
     },
     "contains": {
-      "count": "{value, plural, one {Enthält: # Datei} other {Enthält: {value} Dateien}}"
+      "count": "{value, plural, one {Enthält: # -Datei} other {Enthält: {value} Dateien}}"
     },
     "created": "Erstellt",
     "data_loading": "Laden...",
@@ -994,7 +994,7 @@
   },
   "total_size": "Gesamtgröße",
   "upload": {
-    "files": "{value, plural, one {Lade Datei # hoch} other {Lade # Dateien hoch}}",
+    "files": "{value, plural, one {Hochladen von # Datei starten} other {Hochladen von # Dateien starten}}",
     "upload_mode_not_supported": "Es ist kein gültiger Upload-Modus ausgewählt! Das sollte eigentlich nicht passieren."
   },
   "uploader": {
@@ -1002,14 +1002,14 @@
       "chunked": "Chunked Upload Modus",
       "direct": "Direkter Upload Modus"
     },
-    "expiry_label": "Die Freigabe verfällt am {value} {unit} (Ändern)",
+    "expiry_label": "Die Datei-Freigabe verfällt in {value} {unit}",
     "expiry_max_value": "Max: {value}",
     "expiry_too_long": "Die von Ihnen eingegebene Ablaufzeit überschreitet das Maximum. Wir haben sie automatisch auf den längsten zulässigen Zeitraum gesetzt.",
     "expiry_unit": {
-      "days": "Tag(e)",
-      "months": "Monat(e)",
+      "days": "Tag(en)",
+      "months": "Monat(en)",
       "weeks": "Woche(n)",
-      "years": "Jahr(e)"
+      "years": "Jahr(en)"
     },
     "guest_share_created": "Dankeschön! Ihre Dateien wurden erfolgreich gesendet. Sie werden in wenigen Augenblicken abgemeldet.",
     "interrupted_upload": {
