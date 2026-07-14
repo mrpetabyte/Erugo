@@ -12,11 +12,11 @@ use App\Services\SettingsService;
 
 function getSettings()
 {
-    
+
     $settingsService = new SettingsService();
 
-    
-    
+
+
     $settings = Setting::whereLike('group', 'ui%')
         ->orWhere('key', 'default_language')
         ->orWhere('key', 'show_language_selector')
@@ -76,6 +76,15 @@ Route::get('/reset-password/{token}', function ($token) {
 });
 
 Route::get('/shares/{share}', function ($shareId) {
+    $directDownloadFlags = ['1', 'true', 'yes', 'on'];
+    $isDirectDownload = in_array(strtolower((string) request()->query('directdl', '')), $directDownloadFlags, true)
+        || in_array(strtolower((string) request()->query('download', '')), $directDownloadFlags, true);
+
+    if ($isDirectDownload) {
+        $controller = app(\App\Http\Controllers\SharesController::class);
+        return $controller->download($shareId);
+    }
+
     // Detect CLI tools (curl, wget, etc.) and serve file directly
     $userAgent = request()->userAgent() ?? '';
     $cliPatterns = [
@@ -85,7 +94,7 @@ Route::get('/shares/{share}', function ($shareId) {
         '/^Wget/i',
         '/^HTTPie\//i',
     ];
-    
+
     $isCli = false;
     foreach ($cliPatterns as $pattern) {
         if (preg_match($pattern, $userAgent)) {
@@ -93,7 +102,7 @@ Route::get('/shares/{share}', function ($shareId) {
             break;
         }
     }
-    
+
     if ($isCli) {
         // Serve file directly (curl uses Content-Disposition with -OJ flag)
         $controller = app(\App\Http\Controllers\SharesController::class);
