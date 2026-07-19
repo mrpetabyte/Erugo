@@ -252,7 +252,7 @@ class UploadsController extends Controller
     foreach ($files as $file) {
       // Move file from tusd uploads to share directory
       $sourcePath = storage_path('app/' . $file->temp_path);
-      
+
       // Determine the original path based on whether this is a bundle file or not
       if ($isBundleUpload) {
         // For bundle files, the path is embedded in temp_path after '_extracted/'
@@ -275,17 +275,17 @@ class UploadsController extends Controller
             break;
           }
         }
-        
+
         $originalPath = $request->filePaths[$uploadId] ?? '';
         $originalPath = explode('/', $originalPath);
         $originalPath = implode('/', array_slice($originalPath, 0, -1));
-        
+
         // Sanitize path to prevent directory traversal attacks
         $originalPath = $this->sanitizePath($originalPath);
       }
 
       $destPath = $completePath . '/' . $originalPath;
-      
+
       // Verify the resolved path is within the share directory
       // Create parent directories first so realpath can resolve
       if (!file_exists($destPath)) {
@@ -293,35 +293,34 @@ class UploadsController extends Controller
       }
       $resolvedPath = realpath($destPath);
       $resolvedSharePath = realpath($completePath);
-      
-      if ($resolvedPath === false || $resolvedSharePath === false || 
-          strpos($resolvedPath, $resolvedSharePath) !== 0) {
+
+      if ($resolvedPath === false || $resolvedSharePath === false ||
+          ($resolvedPath !== $resolvedSharePath && strpos($resolvedPath, $resolvedSharePath . DIRECTORY_SEPARATOR) !== 0)) {
         Log::warning('Path traversal attempt detected', [
           'user_id' => $user->id,
           'original_path' => $request->filePaths[$uploadId] ?? '',
           'resolved_path' => $resolvedPath,
           'share_path' => $resolvedSharePath
         ]);
-        
+
         // Clean up and skip this file
         continue;
       }
-      
+
       // Use sanitized filename from database for file operations
       $sanitizedFilename = $file->name;
       $destFile = $destPath . '/' . $sanitizedFilename;
-      
-      // Move file to share directory
-      // Use copy + unlink instead of rename to handle cross-filesystem moves
+
+      // Move file to share directory.
+      // Use copy + unlink has fallback of rename to handle cross-filesystem moves
       if (file_exists($sourcePath)) {
-        if (copy($sourcePath, $destFile)) {
-          unlink($sourcePath);
-        } else {
-          // Fallback to rename if copy fails
-          rename($sourcePath, $destFile);
+        if (!rename($sourcePath, $destFile)) {
+          if(copy($sourcePath, $destFile)) {
+            unlink($sourcePath);
+          }
         }
       }
-      
+
       // Clean up tusd .info file (only for non-bundle files)
       if (!$isBundleUpload) {
         $infoPath = $sourcePath . '.info';
@@ -366,12 +365,8 @@ class UploadsController extends Controller
         Log::error('Guest user has no invite user', ['user_id' => $user->id]);
       }
 
-      $invite->guest_user_id = null;
-      $invite->save();
-
       //log the user out
       Auth::logout();
-      $user->delete();
 
       $cookie = cookie('refresh_token', '', 0, null, null, false, true);
       return response()->json([
@@ -457,22 +452,22 @@ class UploadsController extends Controller
   {
     // Normalize directory separators
     $path = str_replace('\\', '/', $path);
-    
+
     // Remove any ../ or ..\ sequences (handles encoded variants too)
     $path = preg_replace('/\.\.[\\/\\\\]/', '', $path);
-    
-    // Also remove standalone .. 
+
+    // Also remove standalone ..
     $path = preg_replace('/\.\./', '', $path);
-    
+
     // Remove leading slashes to prevent absolute paths
     $path = ltrim($path, '/');
-    
+
     // Remove any null bytes
     $path = str_replace("\0", '', $path);
-    
+
     // Clean up any double slashes that may have resulted
     $path = preg_replace('/\/+/', '/', $path);
-    
+
     return $path;
   }
 

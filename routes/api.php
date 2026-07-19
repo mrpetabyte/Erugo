@@ -49,7 +49,7 @@ Route::group([], function ($router) {
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgotPassword');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.resetPassword');
-        
+
         // Self-registration routes
         Route::post('register', [SelfRegistrationController::class, 'register'])->name('auth.register');
         Route::post('verify-email', [SelfRegistrationController::class, 'verifyEmail'])->name('auth.verifyEmail');
@@ -197,7 +197,7 @@ Route::group([], function ($router) {
 
     //download shares [public]
     Route::any('/shares/{share}/download', [SharesController::class, 'download'])->name('shares.download');
-    
+
     //download specific file from share [public] - filepath can include nested directories
     Route::get('/shares/{share}/download/file/{filepath}', [SharesController::class, 'downloadFile'])
         ->where('filepath', '.*')

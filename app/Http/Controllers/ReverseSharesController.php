@@ -9,10 +9,10 @@ use App\Models\User;
 use App\Models\ReverseShareInvite;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Crypt;
 use App\Jobs\sendEmail;
 use App\Mail\reverseShareInviteMail;
 use App\Models\Setting;
+use App\Services\LongIdGenerator;
 
 
 class ReverseSharesController extends Controller
@@ -62,7 +62,6 @@ class ReverseSharesController extends Controller
             })
             ->first();
 
-        $encryptedToken = null;
         $guestUserId = null;
 
         if ($existingUser) {
@@ -78,15 +77,14 @@ class ReverseSharesController extends Controller
                 'is_guest' => true
             ]);
             $guestUserId = $guestUser->id;
-
-            // Generate a token only for guest users
-            $token = auth()->tokenById($guestUser->id);
-            $encryptedToken = Crypt::encryptString($token);
         }
+
+        $inviteCode = (new LongIdGenerator())->generateForInvite();
 
         $invite = ReverseShareInvite::create([
             'user_id' => $user->id,
             'guest_user_id' => $guestUserId,
+            'invite_code' => $inviteCode,
             'recipient_name' => $request->recipient_name,
             'recipient_email' => $request->recipient_email,
             'message' => $request->message,
@@ -96,7 +94,7 @@ class ReverseSharesController extends Controller
         sendEmail::dispatch($request->recipient_email, reverseShareInviteMail::class, [
             'user' => $user,
             'invite' => $invite,
-            'token' => $encryptedToken, // Will be null for existing users
+            'invite_code' => $inviteCode,
             'isExistingUser' => $existingUser !== null
         ]);
 

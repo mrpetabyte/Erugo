@@ -14,7 +14,6 @@ use App\Mail\passwordResetMail;
 use App\Jobs\sendEmail;
 use Illuminate\Auth\Events\PasswordReset;
 use App\Models\ReverseShareInvite;
-use Illuminate\Support\Facades\Crypt;
 
 
 class AuthController extends Controller
@@ -108,7 +107,7 @@ class AuthController extends Controller
     public function acceptReverseShareInvite(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string',
+            'invite_code' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -121,18 +120,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $token = Crypt::decryptString($request->token);
-
-        $user = Auth::setToken($token)->user();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized'
-            ], 401);
-        }
-
-        $invite = ReverseShareInvite::where('guest_user_id', $user->id)->first();
+        $invite = ReverseShareInvite::where('invite_code', $request->invite_code)->first();
 
         if (!$invite) {
             return response()->json([
@@ -148,6 +136,15 @@ class AuthController extends Controller
             ], 404);
         }
 
+        $user = User::find($invite->guest_user_id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User for invite not found'
+            ], 404);
+        }
+
         /* DISABLED to allow multiple uses of the same invite
         if ($invite->isUsed()) {
             return response()->json([
@@ -158,9 +155,6 @@ class AuthController extends Controller
         */
 
         $invite->markAsUsed();
-
-        //invalidate the token
-        auth()->invalidate();
 
         return $this->respondWithToken($user);
     }

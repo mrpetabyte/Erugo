@@ -63,7 +63,7 @@ onMounted(async () => {
   // Parse URL parameters FIRST (before any async operations)
   // This ensures invite_id is set before attemptRefresh() completes
   const urlParams = new URLSearchParams(window.location.search)
-  
+
   // Check for invite_id (for existing users who need to log in)
   const inviteId = urlParams.get('invite_id')
   if (inviteId) {
@@ -90,7 +90,7 @@ onMounted(async () => {
   }
 
   // Grab reverse share token from url (for guest users)
-  reverseShareToken.value = urlParams.get('invite_token')
+  reverseShareToken.value = urlParams.get('invite_code')
   if (reverseShareToken.value) {
     try {
       await acceptReverseShareInvite(reverseShareToken.value)

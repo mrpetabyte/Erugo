@@ -13,7 +13,7 @@ use App\Models\Download;
 use App\Mail\shareDownloadedMail;
 use App\Jobs\sendEmail;
 use App\Services\SettingsService;
-use App\Services\PatternGenerator;
+use App\Services\LongIdGenerator;
 use App\Jobs\cleanSpecificShares;
 use Illuminate\Support\Facades\Hash;
 
@@ -289,11 +289,11 @@ class SharesController extends Controller
     if ($share->file_count == 1) {
       $file = $share->files[0];
       $expectedPath = $file->full_path ? $file->full_path . '/' . $file->display_name : $file->display_name;
-      
+
       if ($filepath === $expectedPath || $filepath === $file->display_name) {
         $sharePath = storage_path('app/shares/' . $share->path);
         $filePath = $sharePath . '/' . $file->name;
-        
+
         if (file_exists($filePath)) {
           $this->createDownloadRecord($share);
           return response()->download(
@@ -438,17 +438,17 @@ class SharesController extends Controller
     $userId = $request->input('user_id', null);
 
     $shares = Share::orderBy('created_at', 'desc')->with(['files', 'user', 'invite.user']);
-    
+
     if ($showDeleted === 'false') {
       $shares = $shares->where('status', '!=', 'deleted');
     }
-    
+
     if ($userId) {
       $shares = $shares->where('user_id', $userId);
     }
-    
+
     $shares = $shares->get();
-    
+
     return response()->json([
       'status' => 'success',
       'message' => 'All shares',
@@ -605,51 +605,7 @@ class SharesController extends Controller
 
   public function generateLongId()
   {
-    $settingsService = new SettingsService();
-    $mode = $settingsService->get('share_url_mode') ?? 'haiku';
-
-    $maxAttempts = 10;
-    $attempts = 0;
-
-    $id = $this->generateIdByMode($mode, $settingsService);
-    while (Share::where('long_id', $id)->exists() && $attempts < $maxAttempts) {
-      $id = $this->generateIdByMode($mode, $settingsService);
-      $attempts++;
-    }
-
-    if ($attempts >= $maxAttempts) {
-      throw new \Exception('Unable to generate unique long_id after ' . $maxAttempts . ' attempts');
-    }
-
-    return $id;
-  }
-
-  private function generateIdByMode(string $mode, SettingsService $settingsService): string
-  {
-    return match ($mode) {
-      'pattern' => $this->generatePatternId($settingsService),
-      default => $this->generateHaikuId(),
-    };
-  }
-
-  private function generateHaikuId(): string
-  {
-    return Haikunator::haikunate() . '-' . Haikunator::haikunate();
-  }
-
-  private function generatePatternId(SettingsService $settingsService): string
-  {
-    $pattern = $settingsService->get('share_url_pattern') ?? '******';
-    $generator = new PatternGenerator();
-    
-    $error = $generator->validate($pattern);
-    if ($error !== null) {
-      // Fallback to a safe default pattern if the configured one is invalid
-      \Log::warning("Invalid share URL pattern configured: {$error}. Using default.");
-      $pattern = '******';
-    }
-    
-    return $generator->generate($pattern);
+    return (new LongIdGenerator())->generateForShare();
   }
 
   private function getSettings()
