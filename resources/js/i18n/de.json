@@ -989,7 +989,7 @@
       "including": "einschließlich:"
     },
     "not_found": "Die von Ihnen gesuchte Freigabe wurde nicht gefunden. Möglicherweise müssen Sie sich anmelden, um Zugriff zu erhalten.",
-    "passwordNotProtected": "Öffnen",
+    "passwordNotProtected": "Offene Freigabe",
     "passwordProtected": "Passwortgeschützt"
   },
   "total_size": "Gesamtgröße",
@@ -1003,7 +1003,7 @@
       "direct": "Direkter Upload Modus"
     },
     "expiry_label": "Die Datei-Freigabe verfällt in {value} {unit}",
-    "expiry_max_value": "Max: {value}",
+    "expiry_max_value": "Maximum: {value}",
     "expiry_too_long": "Die von Ihnen eingegebene Ablaufzeit überschreitet das Maximum. Wir haben sie automatisch auf den längsten zulässigen Zeitraum gesetzt.",
     "expiry_unit": {
       "days": "Tag(en)",
