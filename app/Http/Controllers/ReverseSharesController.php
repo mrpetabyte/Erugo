@@ -30,10 +30,16 @@ class ReverseSharesController extends Controller
             ], 400);
         }
 
-        $validator = Validator::make($request->all(), [
-            'recipient_name' => ['required', 'string', 'max:255'],
-            'recipient_email' => ['required', 'email', 'max:255']
-        ]);
+        if ($request->recipient_email) {
+            $validator = Validator::make($request->all(), [
+                'recipient_email' => ['email', 'max:255'],
+                'recipient_name' => ['required', 'string', 'max:255'],
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'label' => ['required', 'string', 'max:255'],
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -55,23 +61,30 @@ class ReverseSharesController extends Controller
         }
 
         // Check if recipient is an existing non-guest user
-        $existingUser = User::where('email', $request->recipient_email)
-            ->where(function ($query) {
-                $query->where('is_guest', false)
-                    ->orWhereNull('is_guest');
-            })
-            ->first();
+        $existingUser = null;
+        if ($request->recipient_email) {
+            $existingUser = User::where('email', $request->recipient_email)
+                ->where(function ($query) {
+                    $query->where('is_guest', false)
+                        ->orWhereNull('is_guest');
+                })
+                ->first();
+        }
 
         $guestUserId = null;
 
-        if ($existingUser) {
-            // Existing user - no token, no guest user
-            // They will need to log in with their credentials
-            $guestUserId = null;
+        if ($request->recipient_email) {
+            // Email mode: strictly for existing registered users
+            if (!$existingUser) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No account found for this email'
+                ], 422);
+            }
         } else {
-            // Create a guest user for the invite
+            // Link mode: create a guest user for the invite
             $guestUser = User::create([
-                'name' => $request->recipient_name,
+                'name' => $request->label,
                 'email' => Str::random(20), //we don't need a real email for the guest user
                 'password' => Hash::make(Str::random(20)), //set a random password so the user can't login
                 'is_guest' => true
@@ -85,18 +98,22 @@ class ReverseSharesController extends Controller
             'user_id' => $user->id,
             'guest_user_id' => $guestUserId,
             'invite_code' => $inviteCode,
-            'recipient_name' => $request->recipient_name,
-            'recipient_email' => $request->recipient_email,
-            'message' => $request->message,
-            'expires_at' => now()->addDays(7)
+            'recipient_name' => $request->recipient_name ?: null,
+            'recipient_email' => $request->recipient_email ?: null,
+            'message' => $request->message ?: null,
+            'label' => $request->label ?: null,
+            'expires_at' => now()->addDays(14)
         ]);
 
-        sendEmail::dispatch($request->recipient_email, reverseShareInviteMail::class, [
-            'user' => $user,
-            'invite' => $invite,
-            'invite_code' => $inviteCode,
-            'isExistingUser' => $existingUser !== null
-        ]);
+        // Only send email if recipient_email is provided
+        if ($request->recipient_email) {
+            sendEmail::dispatch($request->recipient_email, reverseShareInviteMail::class, [
+                'user' => $user,
+                'invite' => $invite,
+                'invite_code' => $inviteCode,
+                'isExistingUser' => $existingUser !== null
+            ]);
+        }
 
         return response()->json([
             'status' => 'success',
