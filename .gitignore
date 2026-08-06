@@ -6,6 +6,7 @@
 /public/backgrounds
 /public/images
 /storage/*.key
+/storage/jwt.secret
 /storage/instance.guid
 /storage/pail
 /storage/templates/*
