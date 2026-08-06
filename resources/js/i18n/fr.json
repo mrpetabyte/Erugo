@@ -1055,7 +1055,8 @@
     "upload_mode_swapped": "Le mode de téléchargement est passé à {value}\n"
   },
   "uploading": {
-    "files": "{value, plural, one {Téléchargement du fichier #.} other {Téléchargement des fichiers #.} }"
+    "files": "{value, plural, one {Téléchargement du fichier #.} other {Téléchargement des fichiers #.} }",
+    "title": "Téléchargement..."
   },
   "warnings": {
     "how_to_fix": "Comment réparer",

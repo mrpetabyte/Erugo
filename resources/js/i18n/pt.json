@@ -1027,7 +1027,8 @@
     "upload_mode_swapped": "Modo de carregamento alterado para {value}"
   },
   "uploading": {
-    "files": "{value, plural, one {Transferindo # ficheiro} other {Transferindo # ficheiros} }"
+    "files": "{value, plural, one {Transferindo # ficheiro} other {Transferindo # ficheiros} }",
+    "title": "A carregar..."
   },
   "warnings": {
     "how_to_fix": "Como corrigir",

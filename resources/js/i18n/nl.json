@@ -1055,7 +1055,8 @@
     "upload_mode_swapped": "Uploadmodus gewijzigd in {value}"
   },
   "uploading": {
-    "files": "{value, plural, one {# bestand uploaden} other {# bestanden uploaden}}"
+    "files": "{value, plural, one {# bestand uploaden} other {# bestanden uploaden}}",
+    "title": "Uploaden..."
   },
   "warnings": {
     "how_to_fix": "Hoe repareren",

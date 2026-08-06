@@ -1055,7 +1055,8 @@
     "upload_mode_swapped": "Modalità di caricamento cambiata in {value}"
   },
   "uploading": {
-    "files": "{value, plural, one {Caricamento del file} other {Caricamento di # file} }"
+    "files": "{value, plural, one {Caricamento del file} other {Caricamento di # file} }",
+    "title": "Caricamento..."
   },
   "warnings": {
     "how_to_fix": "Come risolvere",

@@ -1055,7 +1055,8 @@
     "upload_mode_swapped": "Upload-Modus auf {value} geändert"
   },
   "uploading": {
-    "files": "{value, plural, one {Hochladen der Datei #} other {Hochladen von # Dateien}}"
+    "files": "{value, plural, one {Hochladen der Datei #} other {Hochladen von # Dateien}}",
+    "title": "Wird hochgeladen..."
   },
   "warnings": {
     "how_to_fix": "Problembehebung",

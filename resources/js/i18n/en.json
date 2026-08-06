@@ -1076,7 +1076,8 @@
     "upload_mode_swapped": "Upload mode changed to {value}"
   },
   "uploading": {
-    "files": "{value, plural, one {Uploading # file} other {Uploading # files}}"
+    "files": "{value, plural, one {Uploading # file} other {Uploading # files}}",
+    "title": "Uploading..."
   },
   "warnings": {
     "how_to_fix": "How to fix",
