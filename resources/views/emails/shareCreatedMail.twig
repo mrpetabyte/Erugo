@@ -1,12 +1,22 @@
 {% extends 'emails/layout' %}
 
-{% block header %} You have files to download
+{% block header %}
+	{% if user.is_guest%}  {# This is the case for link-based reverse shares #}
+		{{ share.name }}
+	{% else %}
+		You have files to download
+	{% endif %}
 {% endblock %}
 
 {% block content %}
 <h2>Hi {{ recipient_name }},</h2>
 
+{% if user.is_guest %}
+<p>Someone uploaded {{ share.file_count }} file{{ share.file_count == 1 ? '' : 's' }} using your reverse share invite. The share is labelled <b>{{ share.name }}</b>.</p>
+{% else %}
 <p>{{ sender_name }} shared {{ share.file_count }} file{{ share.file_count == 1 ? '' : 's' }} with you.</p>
+{% endif %}
+
 <p>Click the button below to access your files.</p>
 {% endblock %}
 
