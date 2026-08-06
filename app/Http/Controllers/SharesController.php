@@ -16,6 +16,7 @@ use App\Services\SettingsService;
 use App\Services\LongIdGenerator;
 use App\Jobs\cleanSpecificShares;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class SharesController extends Controller
 {
@@ -27,6 +28,8 @@ class SharesController extends Controller
   {
     $sanitized = str_replace(['/', '\\'], '-', $filename);
     $sanitized = str_replace(["\r", "\n"], '', $sanitized);
+    // Keep Content-Disposition compatible with clients that mishandle UTF-8 fallback names.
+    $sanitized = Str::ascii($sanitized);
     $sanitized = trim($sanitized);
 
     return $sanitized !== '' ? $sanitized : $fallback;
