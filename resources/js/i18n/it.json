@@ -48,7 +48,7 @@
     "login_to_accept_invite": "Effettua l'accesso per accettare l'invito alla condivisione inversa.",
     "login_with": "Accedi con",
     "logout": "Esci",
-    "name": "Nome completo",
+    "name": "Il tuo nome",
     "no_account": "Non hai un account?",
     "or": "Oppure",
     "password": "Password",
@@ -399,7 +399,10 @@
   "full_name": "Nome completo",
   "guest": {
     "upload_success": "Caricamento riuscito!",
-    "upload_success_message": "La persona che ha richiesto questi file riceverà un'email con un link per il download."
+    "upload_success_message": "La persona che ha richiesto questi file riceverà un'email con un link per il download.",
+    "your_name": "Il tuo nome per l'attribuzione (facoltativo)",
+    "guest_user": "Utente ospite (anonimo)",
+    "upload_more": "Carica altri file"
   },
   "invite": {
     "labels": {
@@ -414,7 +417,20 @@
   "processing_uploaded_files": "Elaborazione dei file caricati",
   "reverse_invite_send": {
     "error": "Impossibile inviare l'invito alla condivisione inversa",
-    "success": "Invito alla condivisione inversa inviato!"
+    "success": "Invito alla condivisione inversa inviato!",
+    "mode_link": "Link",
+    "mode_email": "Email",
+    "label": "Etichetta",
+    "label_placeholder": "es. file del progetto",
+    "label_optional": "Etichetta (facoltativa)",
+    "your_link": "Il tuo link di caricamento",
+    "copy": "Copia",
+    "copied": "Copiato!",
+    "create_link": "Crea link",
+    "label_required": "Fornisci un'etichetta",
+    "email_required": "Inserisci l'email del destinatario",
+    "name_required": "Inserisci il nome del destinatario",
+    "no_account_error": "Nessun account trovato per questa email"
   },
   "settings": {
     "about": {
@@ -1002,7 +1018,7 @@
       "chunked": "Modalità di caricamento chunked",
       "direct": "Modalità di caricamento diretto"
     },
-    "expiry_label": "L'azione scadrà nel {value} {unit} (modifica)",
+    "expiry_label": "L'azione scadrà tra {text} (modifica)",
     "expiry_max_value": "Max: {value}",
     "expiry_too_long": "Il tempo di scadenza inserito supera il limite massimo. L'abbiamo adattato automaticamente al periodo più lungo consentito.",
     "expiry_unit": {
@@ -1010,6 +1026,12 @@
       "months": "Mese/i",
       "weeks": "Settimana/e",
       "years": "Anno/i"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} giorno} other {{value} giorni}}",
+      "months": "{value, plural, one {{value} mese} other {{value} mesi}}",
+      "weeks": "{value, plural, one {{value} settimana} other {{value} settimane}}",
+      "years": "{value, plural, one {{value} anno} other {{value} anni}}"
     },
     "guest_share_created": "Grazie! I file sono stati inviati con successo. Tra pochi istanti verrà effettuato il logout.",
     "interrupted_upload": {

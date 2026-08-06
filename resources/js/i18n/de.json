@@ -2,7 +2,7 @@
   "Account Created": "Konto erstellt",
   "Add Files": "Dateien hinzufügen",
   "Add Folders": "Ordner hinzufügen",
-  "Add Recipient": "Empfänger hinzufügen",
+  "Add Recipient": "Empfänger",
   "Email Verification": "E-Mail-Verifizierung",
   "Message to share recipients (optional)": "Nachricht an den/die Empfänger (optional)",
   "No files added yet": "Noch keine Dateien hinzugefügt",
@@ -48,7 +48,7 @@
     "login_to_accept_invite": "Bitte melden Sie sich an, um diese Einladung anzunehmen.",
     "login_with": "Anmelden mit",
     "logout": "Abmelden",
-    "name": "Vollständiger Name",
+    "name": "Dein Name",
     "no_account": "Sie haben noch kein Konto?",
     "or": "Oder",
     "password": "Passwort",
@@ -399,7 +399,10 @@
   "full_name": "Vollständiger Name",
   "guest": {
     "upload_success": "Upload erfolgreich!",
-    "upload_success_message": "Die Person, die diese Dateien angefordert hat, erhält eine E-Mail mit einem Download-Link."
+    "upload_success_message": "Die Person, die diese Dateien angefordert hat, erhält eine E-Mail mit einem Download-Link.",
+    "your_name": "Dein Name für die Zuordnung (optional)",
+    "guest_user": "Gastnutzer (anonym)",
+    "upload_more": "Weitere Dateien hochladen"
   },
   "invite": {
     "labels": {
@@ -414,7 +417,20 @@
   "processing_uploaded_files": "Verarbeite hochgeladene Dateien",
   "reverse_invite_send": {
     "error": "Dateifreigabe-Einladung konnte nicht gesendet werden",
-    "success": "Einladung zur Dateifreigabe gesendet!"
+    "success": "Einladung zur Dateifreigabe gesendet!",
+    "mode_link": "Link",
+    "mode_email": "E-Mail",
+    "label": "Bezeichnung",
+    "label_placeholder": "z. B. Projektdateien",
+    "label_optional": "Bezeichnung (optional)",
+    "your_link": "Ihr Upload-Link",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "create_link": "Link erstellen",
+    "label_required": "Bitte geben Sie eine Bezeichnung an",
+    "email_required": "Bitte geben Sie eine Empfänger-E-Mail an",
+    "name_required": "Bitte geben Sie einen Empfängernamen an",
+    "no_account_error": "Für diese E-Mail-Adresse wurde kein Konto gefunden"
   },
   "settings": {
     "about": {
@@ -589,7 +605,7 @@
       "view": "Ansehen"
     },
     "reverse_invite": {
-      "description": "Fordern Sie Dateien von einer Kontaktperson an, indem Sie deren Daten unten eingeben. Sie erhalten einen Link, über den sie einmalig Dateien direkt hochladen können. Sobald Dateien hochgeladen wurden, erhalten Sie eine E-Mail-Benachrichtigung."
+      "description": "Fordern Sie Dateien von einer Kontaktperson an, indem Sie deren Daten unten eingeben. Sie erhalten einen Link, über den sie einmalig Dateien direkt hochladen können. Sobald Dateien hochgeladen wurden, erhalten Sie eine E-Mail-Benachrichtigung. Der Link ist 14 Tage gültig."
     },
     "settingsSavedSuccessfully": "Einstellungen erfolgreich gespeichert",
     "share": {
@@ -994,7 +1010,7 @@
   },
   "total_size": "Gesamtgröße",
   "upload": {
-    "files": "{value, plural, one {Hochladen von # Datei starten} other {Hochladen von # Dateien starten}}",
+    "files": "{value, plural, one {Hochladen starten} other {Hochladen von # Dateien starten}}",
     "upload_mode_not_supported": "Es ist kein gültiger Upload-Modus ausgewählt! Das sollte eigentlich nicht passieren."
   },
   "uploader": {
@@ -1002,14 +1018,20 @@
       "chunked": "Chunked Upload Modus",
       "direct": "Direkter Upload Modus"
     },
-    "expiry_label": "Die Datei-Freigabe verfällt in {value} {unit}",
+    "expiry_label": "Die Datei-Freigabe verfällt in {text}",
     "expiry_max_value": "Maximum: {value}",
     "expiry_too_long": "Die von Ihnen eingegebene Ablaufzeit überschreitet das Maximum. Wir haben sie automatisch auf den längsten zulässigen Zeitraum gesetzt.",
     "expiry_unit": {
-      "days": "Tag(en)",
-      "months": "Monat(en)",
-      "weeks": "Woche(n)",
-      "years": "Jahr(en)"
+      "days": "Tage",
+      "months": "Monate",
+      "weeks": "Wochen",
+      "years": "Jahre"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} Tag} other {{value} Tagen}}",
+      "months": "{value, plural, one {{value} Monat} other {{value} Monaten}}",
+      "weeks": "{value, plural, one {{value} Woche} other {{value} Wochen}}",
+      "years": "{value, plural, one {{value} Jahr} other {{value} Jahren}}"
     },
     "guest_share_created": "Dankeschön! Ihre Dateien wurden erfolgreich gesendet. Sie werden in wenigen Augenblicken abgemeldet.",
     "interrupted_upload": {

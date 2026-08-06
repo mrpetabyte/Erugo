@@ -5,5 +5,27 @@
       "callback_url": "URL de chamada de retorno",
       "callback_url_description": "Utilize o URL de retorno de chamada fornecido na configuração do seu fornecedor de identidade."
     }
+  },
+  "guest": {
+    "your_name": "Seu nome para atribuição (opcional)",
+    "guest_user": "Usuário convidado (anônimo)",
+    "upload_more": "Enviar mais arquivos"
+  },
+  "reverse_invite_send": {
+    "error": "Não é possível enviar convite para partilha inversa",
+    "success": "Convite para partilha enviado!",
+    "mode_link": "Link",
+    "mode_email": "E-mail",
+    "label": "Rótulo",
+    "label_placeholder": "ex.: arquivos do projeto",
+    "label_optional": "Rótulo (opcional)",
+    "your_link": "Seu link de upload",
+    "copy": "Copiar",
+    "copied": "Copiado!",
+    "create_link": "Criar link",
+    "label_required": "Forneça um rótulo",
+    "email_required": "Informe o e-mail do destinatário",
+    "name_required": "Informe o nome do destinatário",
+    "no_account_error": "Nenhuma conta encontrada para este e-mail"
   }
 }

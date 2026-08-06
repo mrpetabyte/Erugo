@@ -48,7 +48,7 @@
     "login_to_accept_invite": "Please log in to accept this reverse share invite.",
     "login_with": "Login With",
     "logout": "Logout",
-    "name": "Full Name",
+    "name": "Your name",
     "no_account": "Don't have an account?",
     "or": "Or",
     "password": "Password",
@@ -399,7 +399,10 @@
   "full_name": "Full Name",
   "guest": {
     "upload_success": "Upload Successful!",
-    "upload_success_message": "The person who requested these files will receive an email with a download link."
+    "upload_success_message": "The person who requested these files will receive an email with a download link.",
+    "your_name": "Your name for attribution (optional)",
+    "guest_user": "Guest User (anonymous)",
+    "upload_more": "Upload More Files"
   },
   "invite": {
     "labels": {
@@ -414,7 +417,20 @@
   "processing_uploaded_files": "Processing uploaded files",
   "reverse_invite_send": {
     "error": "Unable to send reverse share invite",
-    "success": "Reverse share invite sent!"
+    "success": "Reverse share invite sent!",
+    "mode_link": "Link",
+    "mode_email": "E-mail",
+    "label": "Label",
+    "label_placeholder": "e.g. Project files",
+    "label_optional": "Label (optional)",
+    "your_link": "Your upload link",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "create_link": "Create Link",
+    "label_required": "Please provide a label",
+    "email_required": "Please enter a recipient email",
+    "name_required": "Please enter a recipient name",
+    "no_account_error": "No account found for this email"
   },
   "settings": {
     "about": {
@@ -610,7 +626,7 @@
       "view": "View"
     },
     "reverse_invite": {
-      "description": "Request files from a contact by entering their details below. They'll receive a link that grants one-time access to upload files directly to you. Once they've uploaded the files, you'll receive an email notification."
+      "description": "Request files from a contact by entering their details below. They'll receive a link that grants one-time access to upload files directly to you. Once they've uploaded the files, you'll receive an email notification. The link will expire in 14 days."
     },
     "settingsSavedSuccessfully": "Settings saved successfully",
     "share": {
@@ -1023,7 +1039,7 @@
       "chunked": "Chunked upload mode",
       "direct": "Direct upload mode"
     },
-    "expiry_label": "Share will expire in {value} {unit}  (change)",
+    "expiry_label": "Share will expire in {text} (change)",
     "expiry_max_value": "Max: {value}",
     "expiry_too_long": "The expiry time you entered exceeds the maximum limit. We've automatically adjusted it to the longest period allowed.",
     "expiry_unit": {
@@ -1031,6 +1047,12 @@
       "months": "Month(s)",
       "weeks": "Week(s)",
       "years": "Year(s)"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} day} other {{value} days}}",
+      "months": "{value, plural, one {{value} month} other {{value} months}}",
+      "weeks": "{value, plural, one {{value} week} other {{value} weeks}}",
+      "years": "{value, plural, one {{value} year} other {{value} years}}"
     },
     "guest_share_created": "Thank you! Your files have been sent successfully. In a few moments you will be logged out.",
     "interrupted_upload": {

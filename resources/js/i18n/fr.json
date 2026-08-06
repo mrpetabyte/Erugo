@@ -48,7 +48,7 @@
     "login_to_accept_invite": "Veuillez vous connecter pour accepter cette invitation de partage inversé.",
     "login_with": "Se connecter avec",
     "logout": "Déconnexion",
-    "name": "Nom complet",
+    "name": "Votre nom",
     "no_account": "Vous n'avez pas de compte ?",
     "or": "Ou",
     "password": "Mot de passe",
@@ -399,7 +399,10 @@
   "full_name": "Nom complet",
   "guest": {
     "upload_success": "Téléchargement réussi !",
-    "upload_success_message": "La personne qui a demandé ces fichiers recevra un e-mail avec un lien de téléchargement."
+    "upload_success_message": "La personne qui a demandé ces fichiers recevra un e-mail avec un lien de téléchargement.",
+    "your_name": "Votre nom pour l'attribution (facultatif)",
+    "guest_user": "Utilisateur invité (anonyme)",
+    "upload_more": "Téléverser plus de fichiers"
   },
   "invite": {
     "labels": {
@@ -414,7 +417,20 @@
   "processing_uploaded_files": "Traitement des fichiers téléchargés",
   "reverse_invite_send": {
     "error": "Impossible d'envoyer l'invitation du partage inversé",
-    "success": "Invitation au partage inversé envoyée !"
+    "success": "Invitation au partage inversé envoyée !",
+    "mode_link": "Lien",
+    "mode_email": "E-mail",
+    "label": "Libellé",
+    "label_placeholder": "p. ex. fichiers du projet",
+    "label_optional": "Libellé (facultatif)",
+    "your_link": "Votre lien de téléversement",
+    "copy": "Copier",
+    "copied": "Copié !",
+    "create_link": "Créer un lien",
+    "label_required": "Veuillez fournir un libellé",
+    "email_required": "Veuillez saisir l'e-mail du destinataire",
+    "name_required": "Veuillez saisir le nom du destinataire",
+    "no_account_error": "Aucun compte trouvé pour cet e-mail"
   },
   "settings": {
     "about": {
@@ -1002,7 +1018,7 @@
       "chunked": "Mode de téléchargement par morceaux",
       "direct": "Mode de téléchargement direct"
     },
-    "expiry_label": "Le partage expirera dans {value} {unit}  (modifier)",
+    "expiry_label": "Le partage expirera dans {text} (modifier)",
     "expiry_max_value": "Max {value}",
     "expiry_too_long": "Le délai d'expiration que vous avez introduit dépasse la limite maximale. Nous l'avons automatiquement adapté à la période la plus longue autorisée.",
     "expiry_unit": {
@@ -1010,6 +1026,12 @@
       "months": "Mois",
       "weeks": "Semaine(s)",
       "years": "An(s)"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} jour} other {{value} jours}}",
+      "months": "{value, plural, one {{value} mois} other {{value} mois}}",
+      "weeks": "{value, plural, one {{value} semaine} other {{value} semaines}}",
+      "years": "{value, plural, one {{value} an} other {{value} ans}}"
     },
     "guest_share_created": "Merci ! Vos fichiers ont bien été envoyés. Vous serez déconnecté dans quelques instants.",
     "interrupted_upload": {

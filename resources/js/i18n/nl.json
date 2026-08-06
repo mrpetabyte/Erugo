@@ -48,7 +48,7 @@
     "login_to_accept_invite": "Log in om deze uitnodiging voor omgekeerd delen te accepteren.",
     "login_with": "Inloggen met",
     "logout": "Afmelden",
-    "name": "Volledige naam",
+    "name": "Je naam",
     "no_account": "Heb je geen account?",
     "or": "Of",
     "password": "Wachtwoord",
@@ -399,7 +399,10 @@
   "full_name": "Volledige naam",
   "guest": {
     "upload_success": "Uploaden gelukt!",
-    "upload_success_message": "De persoon die deze bestanden heeft aangevraagd, ontvangt een e-mail met een downloadlink."
+    "upload_success_message": "De persoon die deze bestanden heeft aangevraagd, ontvangt een e-mail met een downloadlink.",
+    "your_name": "Je naam voor de toewijzing (optioneel)",
+    "guest_user": "Gastgebruiker (anoniem)",
+    "upload_more": "Meer bestanden uploaden"
   },
   "invite": {
     "labels": {
@@ -414,7 +417,20 @@
   "processing_uploaded_files": "Verwerken van geüploade bestanden",
   "reverse_invite_send": {
     "error": "Kan uitnodiging voor omgekeerd delen niet verzenden",
-    "success": "Uitnodiging voor omgekeerd delen verzonden!"
+    "success": "Uitnodiging voor omgekeerd delen verzonden!",
+    "mode_link": "Link",
+    "mode_email": "E-mail",
+    "label": "Label",
+    "label_placeholder": "bijv. projectbestanden",
+    "label_optional": "Label (optioneel)",
+    "your_link": "Je uploadlink",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd!",
+    "create_link": "Link maken",
+    "label_required": "Geef een label op",
+    "email_required": "Voer het e-mailadres van de ontvanger in",
+    "name_required": "Voer de naam van de ontvanger in",
+    "no_account_error": "Geen account gevonden voor dit e-mailadres"
   },
   "settings": {
     "about": {
@@ -1002,7 +1018,7 @@
       "chunked": "Modus voor gebundeld laden",
       "direct": "Directe uploadmodus"
     },
-    "expiry_label": "Aandeel vervalt in {value} {unit} (verandering)",
+    "expiry_label": "Aandeel vervalt in {text} (verandering)",
     "expiry_max_value": "Max: {value}",
     "expiry_too_long": "De vervaltijd die je hebt opgegeven overschrijdt de maximumlimiet. We hebben het automatisch aangepast naar de langst toegestane periode.",
     "expiry_unit": {
@@ -1010,6 +1026,12 @@
       "months": "Maand(en)",
       "weeks": "Week(en)",
       "years": "Jaar/jaren"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} dag} other {{value} dagen}}",
+      "months": "{value, plural, one {{value} maand} other {{value} maanden}}",
+      "weeks": "{value, plural, one {{value} week} other {{value} weken}}",
+      "years": "{value, plural, one {{value} jaar} other {{value} jaar}}"
     },
     "guest_share_created": "Hartelijk dank! Je bestanden zijn succesvol verzonden. Over enkele ogenblikken wordt u uitgelogd.",
     "interrupted_upload": {

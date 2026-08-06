@@ -43,6 +43,7 @@
     "login_to_accept_invite": "Inicie sessão para aceitar este convite de partilha inversa.",
     "login_with": "Iniciar sessão com",
     "logout": "Terminar Sessão",
+    "name": "O seu nome",
     "or": "Ou",
     "password": "Palavra passe",
     "password_reset_email_sent": "E-mail para repor a palavra passe foi enviado",
@@ -378,7 +379,10 @@
   "full_name": "Nome Completo",
   "guest": {
     "upload_success": "Carregamento bem sucedido!",
-    "upload_success_message": "A pessoa que solicitou estes ficheiros receberá um e-mail com uma ligação para descarregar os mesmos."
+    "upload_success_message": "A pessoa que solicitou estes ficheiros receberá um e-mail com uma ligação para descarregar os mesmos.",
+    "your_name": "O seu nome para atribuição (opcional)",
+    "guest_user": "Utilizador convidado (anónimo)",
+    "upload_more": "Carregar mais ficheiros"
   },
   "invite": {
     "labels": {
@@ -393,7 +397,20 @@
   "processing_uploaded_files": "Processando os ficheiros carregados",
   "reverse_invite_send": {
     "error": "Não é possível enviar convite para partilha inversa",
-    "success": "Convite para partilha enviado!"
+    "success": "Convite para partilha enviado!",
+    "mode_link": "Link",
+    "mode_email": "E-mail",
+    "label": "Etiqueta",
+    "label_placeholder": "ex.: ficheiros do projeto",
+    "label_optional": "Etiqueta (opcional)",
+    "your_link": "A sua ligação de carregamento",
+    "copy": "Copiar",
+    "copied": "Copiado!",
+    "create_link": "Criar ligação",
+    "label_required": "Forneça uma etiqueta",
+    "email_required": "Indique o e-mail do destinatário",
+    "name_required": "Indique o nome do destinatário",
+    "no_account_error": "Não foi encontrada nenhuma conta para este e-mail"
   },
   "settings": {
     "about": {
@@ -973,7 +990,7 @@
       "chunked": "Modo de carregamento por blocos",
       "direct": "Modo de carregamento direto"
     },
-    "expiry_label": "A ação expirará em {value} {unit} (alteração)",
+    "expiry_label": "A ação expirará em {text} (alteração)",
     "expiry_max_value": "Máximo: {value}",
     "expiry_too_long": "O tempo de expiração que introduziu excede o limite máximo. Ajustámo-lo automaticamente para o período mais longo permitido.",
     "expiry_unit": {
@@ -981,6 +998,12 @@
       "months": "Mês(es)",
       "weeks": "Semana(s)",
       "years": "Ano(s)"
+    },
+    "expiry_unit_plural": {
+      "days": "{value, plural, one {{value} dia} other {{value} dias}}",
+      "months": "{value, plural, one {{value} mês} other {{value} meses}}",
+      "weeks": "{value, plural, one {{value} semana} other {{value} semanas}}",
+      "years": "{value, plural, one {{value} ano} other {{value} anos}}"
     },
     "guest_share_created": "Obrigado! Os seus ficheiros foram enviados com sucesso. Dentro de alguns instantes, a sessão será encerrada.",
     "interrupted_upload": {
