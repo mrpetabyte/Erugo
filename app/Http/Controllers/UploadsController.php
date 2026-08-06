@@ -365,14 +365,13 @@ class UploadsController extends Controller
         Log::error('Guest user has no invite user', ['user_id' => $user->id]);
       }
 
-      //log the user out
-      Auth::logout();
-
-      $cookie = cookie('refresh_token', '', 0, null, null, false, true);
       return response()->json([
         'status' => 'success',
         'message' => 'Share created',
-      ])->withCookie($cookie);
+        'data' => [
+          'share' => $share
+        ]
+      ]);
     }
 
     // Check if this existing user has an active reverse share invite
