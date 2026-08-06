@@ -170,10 +170,15 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $twentyFourHours = 60 * 60 * 24;
-        $refreshToken = Auth::setTTL($twentyFourHours)->tokenById($user->id);
+        // Regular users keep the default long refresh window (60 days).
+        // Guest users get a short-lived refresh token (48 hours) so they are
+        // automatically logged out after inactivity. The TTL/cookie minutes are
+        // refreshed on each token refresh, so this is a rolling 48h window.
+        $regularRefreshMinutes = 60 * 60 * 24;
+        $refreshTtlMinutes = $user->is_guest ? 60 * 48 : $regularRefreshMinutes;
+        $refreshToken = Auth::setTTL($refreshTtlMinutes)->tokenById($user->id);
 
-        $cookie = cookie('refresh_token', $refreshToken, $twentyFourHours, null, null, false, true);
+        $cookie = cookie('refresh_token', $refreshToken, $refreshTtlMinutes, null, null, false, true);
 
         return response()->json([
             'status' => 'success',
