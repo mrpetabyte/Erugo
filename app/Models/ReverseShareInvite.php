@@ -13,6 +13,7 @@ class ReverseShareInvite extends Model
     'recipient_name',
     'recipient_email',
     'message',
+    'label',
     'expires_at',
     'completed_at'
   ];
