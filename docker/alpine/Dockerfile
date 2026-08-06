@@ -78,10 +78,10 @@ RUN apk add --no-cache \
 
 # Download and install tusd for the correct architecture
 ENV TUSD_VERSION=2.6.0
-RUN TUSD_ARCH="${TARGETARCH}" && \
-    if [ "$TUSD_ARCH" = "amd64" ]; then TUSD_ARCH="amd64"; \
-    elif [ "$TUSD_ARCH" = "arm64" ]; then TUSD_ARCH="arm64"; \
-    else echo "Unsupported architecture: $TARGETARCH" && exit 1; fi && \
+RUN TUSD_ARCH="${TARGETARCH:-$(uname -m)}" && \
+    if [ "$TUSD_ARCH" = "amd64" ] || [ "$TUSD_ARCH" = "x86_64" ]; then TUSD_ARCH="amd64"; \
+    elif [ "$TUSD_ARCH" = "arm64" ] || [ "$TUSD_ARCH" = "aarch64" ]; then TUSD_ARCH="arm64"; \
+    else echo "Unsupported architecture: ${TARGETARCH:-$(uname -m)}" && exit 1; fi && \
     curl -L -o /tmp/tusd.tar.gz "https://github.com/tus/tusd/releases/download/v${TUSD_VERSION}/tusd_linux_${TUSD_ARCH}.tar.gz" && \
     tar -xzf /tmp/tusd.tar.gz -C /tmp && \
     mv /tmp/tusd_linux_${TUSD_ARCH}/tusd /usr/local/bin/tusd && \
