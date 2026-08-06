@@ -352,11 +352,17 @@ class UploadsController extends Controller
     CreateShareZip::dispatch($share);
 
     if ($user->is_guest) {
-      // Guest user flow (unchanged)
+      // Guest user flow
       $invite = $user->invite;
       $share->public = false;
       $share->invite_id = $invite->id;
       $share->user_id = null;
+      $share->save();
+
+      // Construct share name from invite label and original share name (which the uploader specified)
+      if ($invite->label) {
+        $share->name = $invite->label . ' – ' . $share->name;
+      }
       $share->save();
 
       if ($invite->user) {
