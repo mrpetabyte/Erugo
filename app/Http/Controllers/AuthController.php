@@ -156,10 +156,10 @@ class AuthController extends Controller
 
         $invite->markAsUsed();
 
-        return $this->respondWithToken($user);
+        return $this->respondWithToken($user, ['invite_label' => $invite->label]);
     }
 
-    private function respondWithToken($user)
+    private function respondWithToken($user, array $extraData = [])
     {
         $token = Auth::login($user);
 
@@ -187,8 +187,9 @@ class AuthController extends Controller
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'expires_in' => Auth::factory()->getTTL() * 60,
-                'guest' => $user->is_guest
-            ]
+                'guest' => $user->is_guest,
+                ...$extraData,
+            ],
         ])->withCookie($cookie);
     }
 

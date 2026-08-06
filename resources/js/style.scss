@@ -192,6 +192,12 @@ body {
   overflow: hidden;
   width: min(500px, 100%);
   margin-bottom: 20px;
+  // On small screens, inset the whole column so the upload container doesn't
+  // touch the edges of the viewport.
+  @media (max-width: 900px) {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
   @media (min-width: 900px) {
     margin-bottom: -60px;
   }

@@ -61,7 +61,7 @@ Route::get('/', function () {
     $theme = Theme::where('active', true)->first();
 
 
-    return view('app', ['settings' => $indexedSettings, 'theme' => $theme]);
+    return view('app', ['settings' => $indexedSettings, 'theme' => $theme, 'isDark' => $theme && $theme->isDark()]);
 });
 
 Route::get('/reset-password/{token}', function ($token) {
@@ -72,7 +72,7 @@ Route::get('/reset-password/{token}', function ($token) {
     $theme = Theme::where('active', true)->first();
 
 
-    return view('app', ['settings' => $indexedSettings, 'theme' => $theme]);
+    return view('app', ['settings' => $indexedSettings, 'theme' => $theme, 'isDark' => $theme && $theme->isDark()]);
 });
 
 Route::get('/shares/{share}', function ($shareId) {

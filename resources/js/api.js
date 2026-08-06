@@ -297,21 +297,20 @@ const fetchWithAuth = async (url, options = {}) => {
           // Retry original request with new token
           return await fetch(url, options)
         } catch (refreshError) {
-          // If refresh fails, proceed to logout
+          // Refresh failed -> the session is gone, log out
+          store.setMultiple({
+            admin: false,
+            loggedIn: false,
+            jwt: '',
+            jwtExpires: null
+          })
+          throw new Error('Session expired. Please login again.')
         }
       }
 
-      // If we reach here, either:
-      // 1. It was a 403 without password change required
-      // 2. It was a 401 and token refresh failed
-      // In both cases, we log the user out
-      store.setMultiple({
-        admin: false,
-        loggedIn: false,
-        jwt: '',
-        jwtExpires: null
-      })
-      throw new Error('Session expired. Please login again.')
+      // 403 = authenticated but forbidden (e.g. non-admin on admin-only route).
+      // This is NOT a session problem, so do not log the user out.
+      throw new Error(responseData?.message || 'Forbidden')
     }
 
     // Handle other error status codes
@@ -456,7 +455,7 @@ export const login = async (email, password) => {
   return buildAuthSuccessData(data)
 }
 
-export const sendReverseShareInvite = async (email, name, message) => {
+export const sendReverseShareInvite = async (email, name, message, label) => {
   const response = await fetchWithAuth(`${apiUrl}/api/reverse-shares/invite`, {
     method: 'POST',
     headers: {
@@ -465,7 +464,8 @@ export const sendReverseShareInvite = async (email, name, message) => {
     body: JSON.stringify({
       recipient_name: name,
       recipient_email: email,
-      message: message
+      message: message,
+      label: label
     })
   })
   const data = await response.json()
@@ -476,7 +476,7 @@ export const sendReverseShareInvite = async (email, name, message) => {
 }
 
 export const acceptReverseShareInvite = async (token) => {
-  const response = await fetch(`${apiUrl}/api/reverse-shares/accept?token=${token}`, {
+  const response = await fetch(`${apiUrl}/api/reverse-shares/accept?invite_code=${token}`, {
     method: 'GET',
     credentials: 'include'
   })
@@ -532,6 +532,8 @@ export const logout = async () => {
     jwt: '',
     jwtExpires: null
   })
+
+  store.setReverseShareLabel(null)
 
   return true
 }
@@ -1329,7 +1331,13 @@ const buildAuthSuccessData = (data) => {
     jwtExpires: decoded.exp,
     jwt: data.data.access_token,
     mustChangePassword: decoded.must_change_password,
-    guest: decoded.guest == 1 ? true : false
+    guest: decoded.guest == 1 ? true : false,
+    // undefined = key absent (login/refresh), so callers can distinguish
+    // "no label in this response, don't touch persisted value" from an
+    // explicit empty label (accept flow, where we must clear any stale value).
+    inviteLabel: Object.prototype.hasOwnProperty.call(data.data, 'invite_label')
+      ? data.data.invite_label
+      : undefined
   }
 }
 

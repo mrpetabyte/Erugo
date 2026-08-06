@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import {
-  CircleSlash2,
   FilePlus,
   FolderPlus,
   Upload,
@@ -178,8 +177,20 @@ onMounted(async () => {
   const health = await getHealth()
   maxShareSize.value = health.max_share_size
 
+  // Prefill the guest's name each time the uploader mounts ("Upload More" remounts it)
+  if (store.isGuest()) {
+    shareName.value = store.getGuestUploaderName()
+  }
+
   // Check for interrupted upload
   checkForInterruptedUpload()
+})
+
+// Persist the guest's name across "Upload More" remounts (editable per batch)
+watch(shareName, (value) => {
+  if (store.isGuest()) {
+    store.setGuestUploaderName(value)
+  }
 })
 
 const showFilePicker = () => {
@@ -323,7 +334,7 @@ const pushFile = (file) => {
     uploadBasket.value.push(file)
 
     // If the share name is empty, set it to the top-level directory name or file name
-    if (shareName.value === '') {
+    if (shareName.value === '' && !store.isGuest()) {
       if (file.path) {
         // Use the top directory name
         const topDir = file.path.split('/')[0]
@@ -406,11 +417,16 @@ const multiplierFromUnit = (unit) => {
 const doTusUpload = async (uploadId) => {
   let pageTitleAtStart = document.title
 
+  let shareNameFinal = shareName.value
+  if (store.isGuest() && shareNameFinal.trim() === '') {
+    shareNameFinal = t.value('guest.guest_user')
+  }
+
   try {
     await uploadFilesInChunks(
       uploadBasket.value,
       uploadId,
-      shareName.value,
+      shareNameFinal,
       shareDescription.value,
       recipients.value,
       calculateExpiryDate(),
@@ -470,7 +486,9 @@ const doTusUpload = async (uploadId) => {
           showSharePanel(createShareURL(result.data.share.long_id))
         }
         uploadBasket.value = []
-        shareName.value = ''
+        if (!store.isGuest()) {
+          shareName.value = ''
+        }
         shareDescription.value = ''
         currentlyUploading.value = false
         resetUploadState()
@@ -526,7 +544,6 @@ const createShareURL = (longId) => {
 }
 
 const thankGuestForUpload = () => {
-  logout()
   store.setMode('thank_guest_for_upload')
 }
 
@@ -620,6 +637,12 @@ const checkExpiryValue = (showError = true) => {
   if (maxExpiryTime.value == null) {
     return
   }
+
+  if (expiryValue.value <= 0) {
+    setNewExpiryValueWithoutLoop(1)
+    return
+  }
+
   const currentTimestamp = new Date().getTime()
   const selectedUnitMultiplier = multiplierFromUnit(expiryUnit.value)
   const expiryTimestamp = currentTimestamp + expiryValue.value * selectedUnitMultiplier
@@ -757,10 +780,10 @@ const dropBoxRemoveActiveClass = (e) => {
 }
 
 const handleDropzoneClick = (e) => {
-  console.log(e)
-  if (e.target === dropzone.value) {
-    showFilePicker()
-  }
+  // console.log(e)
+  // if (e.target === dropzone.value) {
+  //   showFilePicker()
+  // }
 }
 
 
@@ -810,6 +833,12 @@ const filesByDirectory = computed(() => {
 
 <template>
   <div class="upload-form">
+    <div
+      class="upload-invite-label"
+      v-if="store.getReverseShareLabel()"
+    >
+      {{ store.getReverseShareLabel() }}
+    </div>
     <div class="buttons">
       <button class="upload-files block text-large" @click="showFilePicker">
         <FilePlus />
@@ -824,6 +853,15 @@ const filesByDirectory = computed(() => {
 
 
       <div class="progress-bar-container" :class="{ visible: currentlyUploading }">
+
+        <div class="progress-bar-header">
+          <div class="progress-bar-heading" v-if="store.getReverseShareLabel()">
+            {{ store.getReverseShareLabel() }}
+          </div>
+          <div class="progress-bar-title">
+            {{ $t('uploading.title') }}
+          </div>
+        </div>
 
         <div class="progress-bar-text">
           <template v-if="uploadProgress < 100">
@@ -859,7 +897,7 @@ const filesByDirectory = computed(() => {
   <div class="expiry-settings-container">
     <span class="expiry-label" @click="toggleExpirySettings">
       <Clock9 />
-      {{ $t('uploader.expiry_label', { value: expiryValue, unit: t('uploader.expiry_unit.' + expiryUnit) }) }}
+      {{ $t('uploader.expiry_label', { text: t('uploader.expiry_unit_plural.' + expiryUnit, { value: expiryValue }) }) }}
     </span>
     <div class="expiry-settings" :class="{ visible: showExpirySettings }">
       <input type="number" v-model="expiryValue" />
@@ -902,18 +940,19 @@ const filesByDirectory = computed(() => {
       </div>
     </div>
 
-    <div class="input-container mb-0">
+    <div class="input-container guest-name-field mb-0" :class="{ 'is-guest': store.isGuest() }">
+      <label v-if="store.isGuest()" for="share-name">{{ t('auth.name') }}</label>
       <input
         type="text"
         v-model="shareName"
-        :placeholder="$t('Share Name')"
-        required
+        :placeholder="t(store.isGuest() ? 'guest.your_name' : 'Share Name')"
+        :required="!store.isGuest()"
+        :disabled="currentlyUploading && store.isGuest()"
         :class="{ error: errors.shareName }"
         class="mb-0"
         id="share-name"
         name="share-name"
         autocomplete="share-name"
-        v-if="!store.isGuest()"
       />
       <div class="error-message" v-if="errors.shareName">
         {{ errors.shareName }}
@@ -959,7 +998,6 @@ const filesByDirectory = computed(() => {
 
       <div class="upload-basket-empty" v-else>
         <div class="upload-basket-empty-text">
-          <CircleSlash2 />
           {{ $t('No files added yet') }}
         </div>
       </div>
@@ -990,7 +1028,7 @@ const filesByDirectory = computed(() => {
           </button>
         </div>
 
-        <div class="ps-0 col-auto">
+        <div class="ps-0 col-auto" v-if="!store.isGuest()">
           <button class="icon-only secondary" @click="showPasswordForm = !showPasswordForm">
             <Lock v-if="passwordProtected" />
             <LockOpen v-else />

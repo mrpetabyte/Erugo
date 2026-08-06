@@ -31,12 +31,16 @@ const niceFileType = type => {
 }
 
 const niceTime = seconds => {
-    if (seconds < 0) return '0s'
-    if (seconds < 60) return `${Math.round(seconds)}s`
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
-    const h = Math.floor(seconds / 3600)
-    const m = Math.round((seconds % 3600) / 60)
-    return `${h}h ${m}m`
+    const totalSeconds = Math.max(0, Math.round(Number(seconds) || 0))
+
+    if (totalSeconds < 60) return `${totalSeconds}s`
+    if (totalSeconds < 3600) {
+        return `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`
+    }
+
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    return `${hours}h ${minutes}m`
 }
 
 const niceExpirationDate = date => {

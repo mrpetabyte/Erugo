@@ -148,6 +148,15 @@ class Theme extends Model
   }
 
   /**
+   * Determine whether the active theme should be treated as a dark theme,
+   * based on its stored light/dark category.
+   */
+  public function isDark(): bool
+  {
+    return strtolower((string) $this->category) === 'dark';
+  }
+
+  /**
    * Get default theme structure when theme is invalid or missing parts
    */
   private function getDefaultTheme()

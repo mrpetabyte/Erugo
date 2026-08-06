@@ -34,10 +34,31 @@ const { t } = useTranslate()
 //static data
 const logoTimestamp = ref(Date.now())
 const logoUrl = computed(() => `/images/logo.png?t=${logoTimestamp.value}`)
+const appName = domData().application_name || ''
 const allowReverseShares = ref(false)
 const logoWidth = ref(0)
 const showPoweredBy = ref(false)
 const setupNeeded = ref(false)
+const loadingStart = Date.now()
+const loadingMinElapsed = ref(false)
+const logoLoaded = ref(false)
+const markLogoLoaded = () => {
+  logoLoaded.value = true
+}
+const isLoading = computed(() => store.mode === 'upload' && (!store.bootstrapDone || !loadingMinElapsed.value))
+
+watch(() => store.bootstrapDone, (done) => {
+  if (!done) return
+  // Enforce a minimum splash duration so it never feels like a flash
+  const wait = Math.max(0, 1500 - (Date.now() - loadingStart))
+  setTimeout(() => {
+    loadingMinElapsed.value = true
+  }, wait)
+})
+
+// Safety net: never leave the splash content hidden if the logo load event
+// never fires (e.g. cached/broken image).
+setTimeout(markLogoLoaded, 3000)
 
 //reactive data
 const auth = ref(null)
@@ -207,10 +228,20 @@ watch(
   <TolgeeProvider>
     <Background />
     <LanguageSelector />
-    <div class="logo-container" v-if="store.mode !== 'setup'">
+    <div class="logo-container" v-if="store.mode !== 'setup' && !isLoading">
       <a href="/"><img :src="logoUrl" alt="Erugo" id="logo" :style="{ width: `${logoWidth}px` }" /></a>
     </div>
-    <div class="main">
+
+    <!-- loading: full-screen splash shown while the initial auth state is being determined -->
+    <div class="loading-screen" v-if="isLoading">
+      <div class="loading-screen-inner" :class="{ 'is-loaded': logoLoaded }">
+        <img :src="logoUrl" :style="{ width: `${logoWidth}px` }" alt="Erugo" class="loading-logo" @load="markLogoLoaded" @error="markLogoLoaded" />
+        <h1 class="loading-name">{{ appName }}</h1>
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <div class="main" v-show="!isLoading">
       <!-- auth: shows if user is not logged in and the mode is upload -->
       <Auth v-show="!store.isLoggedIn() && store.mode === 'upload'" ref="auth" />
 
@@ -227,7 +258,7 @@ watch(
       <ThankGuestForUpload v-if="store.mode === 'thank_guest_for_upload'" />
     </div>
 
-    <footer>
+    <footer v-if="!isLoading">
       <!-- version info: shows if show_powered_by is true -->
       <div class="powered-by" v-if="showPoweredBy">
         {{ $t('Powered by') }}
@@ -258,8 +289,8 @@ watch(
       </div>
     </footer>
 
-    <!-- settings: load only if user is logged in -->
-    <Settings ref="settingsPanel" v-if="store.isLoggedIn()" />
+    <!-- settings: load only if user is logged in and not a guest -->
+    <Settings ref="settingsPanel" v-if="store.isLoggedIn() && !store.isGuest()" />
 
     <!-- reverse invite: load only if reverse shares are allowed and user is logged in and not a guest -->
     <ReverseInvite ref="reverseInvite" v-if="allowReverseShares && !store.isGuest() && store.isLoggedIn()" />
@@ -279,5 +310,67 @@ watch(
   height: 20px;
   margin-top: -5px;
   margin-left: -5px;
+}
+</style>
+
+<style>
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  background: var(--panel-background-color, rgb(235, 235, 235));
+
+  .loading-screen-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: min(400px, 100%);
+    padding: 20px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+
+    &.is-loaded {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .loading-logo {
+      max-width: 100%;
+      height: auto;
+      padding: 0 20px;
+    }
+
+    .loading-name {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--link-color, inherit);
+      margin: 0;
+    }
+
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid rgba(0, 0, 0, 0.15);
+      border-top-color: var(--link-color, #589db6);
+      border-radius: 50%;
+      animation: erugo-loading-spin 0.9s linear infinite;
+    }
+  }
+}
+
+@keyframes erugo-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -1,18 +1,24 @@
 <script setup>
 import { ref, defineExpose } from 'vue'
 import { useTranslate } from '@tolgee/vue'
-import { MessageCircleMore, UserRoundCheck, CircleX } from 'lucide-vue-next'
+import { MessageCircleMore, Link2, Mail, CircleX, Copy, Check } from 'lucide-vue-next'
 import { sendReverseShareInvite } from '../api'
 import { useToast } from 'vue-toastification'
+import { domData } from '../domData'
 const { t } = useTranslate()
 const toast = useToast()
 const reverseInviteActive = ref(false)
+const mode = ref('link')
 const invite = ref({
+  label: '',
   email: '',
   name: '',
   message: ''
 })
+const generatedLink = ref('')
+const linkCopied = ref(false)
 const errors = ref({})
+const submitting = ref(false)
 
 const reverseInviteClickOutside = (event) => {
   if (!event.target.closest('.user-form')) {
@@ -20,21 +26,84 @@ const reverseInviteClickOutside = (event) => {
   }
 }
 
+const resetForm = () => {
+  invite.value = { label: '', email: '', name: '', message: '' }
+  errors.value = {}
+  generatedLink.value = ''
+  linkCopied.value = false
+}
+
+const buildInviteLink = (inviteCode) => {
+  const appUrl = domData().application_url || window.location.origin
+  return `${appUrl}/?invite_code=${inviteCode}`
+}
+
 const sendReverseInvite = async () => {
+  errors.value = {}
+  const isLinkMode = mode.value === 'link'
+
+  const label = isLinkMode ? invite.value.label.trim() : ''
+
+  if (isLinkMode && !label) {
+    errors.value.label = t.value('reverse_invite_send.label_required')
+    return
+  }
+
+  if (!isLinkMode && !invite.value.email.trim()) {
+    errors.value.email = t.value('reverse_invite_send.email_required')
+    return
+  }
+
+  if (!isLinkMode && !invite.value.name.trim()) {
+    errors.value.name = t.value('reverse_invite_send.name_required')
+    return
+  }
+
+  submitting.value = true
   try {
-    await sendReverseShareInvite(invite.value.email, invite.value.name, invite.value.message)
-    reverseInviteActive.value = false
-    toast.success(t.value('reverse_invite_send.success'))
+    const result = await sendReverseShareInvite(
+      isLinkMode ? '' : invite.value.email.trim(),
+      isLinkMode ? '' : invite.value.name.trim(),
+      invite.value.message.trim(),
+      label
+    )
+    if (isLinkMode) {
+      const inviteCode = result?.data?.invite?.invite_code
+      generatedLink.value = buildInviteLink(inviteCode)
+    } else {
+      reverseInviteActive.value = false
+      toast.success(t.value('reverse_invite_send.success'))
+    }
   } catch (error) {
     console.error(error)
-    toast.error(t.value('reverse_invite_send.error'))
+    if (error.message === 'No account found for this email') {
+      toast.error(t.value('reverse_invite_send.no_account_error'))
+    } else {
+      toast.error(error.message || t.value('reverse_invite_send.error'))
+    }
+  } finally {
+    submitting.value = false
   }
 }
+
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(generatedLink.value)
+    linkCopied.value = true
+    setTimeout(() => {
+      linkCopied.value = false
+    }, 1500)
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 const showReverseInviteForm = () => {
+  resetForm()
+  mode.value = 'link'
   reverseInviteActive.value = true
 }
 
-//expose the functions
 defineExpose({
   showReverseInviteForm
 })
@@ -48,46 +117,101 @@ defineExpose({
         {{ $t('settings.title.reverse_invite') }}
       </h2>
       <p>{{ $t('settings.reverse_invite.description') }}</p>
-      <div class="input-container">
-        <label for="edit_user_email">{{ $t('settings.users.email') }}</label>
-        <input
-          type="email"
-          v-model="invite.email"
-          id="edit_user_email"
-          :placeholder="$t('settings.users.email')"
-          required
-          :class="{ error: errors.email }"
-        />
-        <div class="error-message" v-if="errors.email">
-          {{ errors.email }}
+
+      <div class="mode-toggle">
+        <button
+          type="button"
+          class="mode-toggle-btn"
+          :class="{ active: mode === 'link' }"
+          @click="mode = 'link'"
+        >
+          <Link2 />
+          {{ $t('reverse_invite_send.mode_link') }}
+        </button>
+        <button
+          type="button"
+          class="mode-toggle-btn"
+          :class="{ active: mode === 'email' }"
+          @click="mode = 'email'"
+        >
+          <Mail />
+          {{ $t('reverse_invite_send.mode_email') }}
+        </button>
+      </div>
+
+      <template v-if="mode === 'link'">
+        <div class="input-container">
+          <label for="edit_invite_label">{{ $t('reverse_invite_send.label') }}</label>
+          <input
+            type="text"
+            v-model="invite.label"
+            id="edit_invite_label"
+            :placeholder="$t('reverse_invite_send.label_placeholder')"
+            required
+            :class="{ error: errors.label }"
+          />
+          <div class="error-message" v-if="errors.label">
+            {{ errors.label }}
+          </div>
         </div>
-      </div>
-      <div class="input-container">
-        <label for="edit_user_name">{{ $t('settings.users.name') }}</label>
-        <input
-          type="text"
-          v-model="invite.name"
-          id="edit_user_name"
-          :placeholder="$t('settings.users.name')"
-          required
-          :class="{ error: errors.name }"
-        />
-        <div class="error-message" v-if="errors.name">
-          {{ errors.name }}
+
+        <div class="link-result" v-if="generatedLink">
+          <div class="link-result-label">{{ $t('reverse_invite_send.your_link') }}</div>
+          <div class="link-result-value">
+            <span class="link-url">{{ generatedLink }}</span>
+            <button type="button" class="copy-link" @click="copyLink">
+              <Check v-if="linkCopied" />
+              <Copy v-else />
+              {{ linkCopied ? $t('reverse_invite_send.copied') : $t('reverse_invite_send.copy') }}
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="input-container">
-        <label for="edit_user_message">{{ $t('invite.labels.message') }}</label>
-        <textarea
-          v-model="invite.message"
-          id="edit_user_message"
-          :placeholder="$t('invite.message')"
-        ></textarea>
-      </div>
+      </template>
+
+      <template v-else>
+        <div class="input-container">
+          <label for="edit_user_email">{{ $t('settings.users.email') }}</label>
+          <input
+            type="email"
+            v-model="invite.email"
+            id="edit_user_email"
+            :placeholder="$t('settings.users.email')"
+            required
+            :class="{ error: errors.email }"
+          />
+          <div class="error-message" v-if="errors.email">
+            {{ errors.email }}
+          </div>
+        </div>
+        <div class="input-container">
+          <label for="edit_user_name">{{ $t('settings.users.name') }}</label>
+          <input
+            type="text"
+            v-model="invite.name"
+            id="edit_user_name"
+            :placeholder="$t('settings.users.name')"
+            required
+            :class="{ error: errors.name }"
+          />
+          <div class="error-message" v-if="errors.name">
+            {{ errors.name }}
+          </div>
+        </div>
+        <div class="input-container">
+          <label for="edit_user_message">{{ $t('invite.labels.message') }}</label>
+          <textarea
+            v-model="invite.message"
+            id="edit_user_message"
+            :placeholder="$t('invite.message')"
+          ></textarea>
+        </div>
+      </template>
+
       <div class="button-bar">
-        <button @click="sendReverseInvite">
-          <MessageCircleMore />
-          {{ $t('button.reverse_share_invite_send') }}
+        <button @click="sendReverseInvite" :disabled="submitting">
+          <Link2 v-if="mode === 'link'" />
+          <Mail v-else />
+          {{ mode === 'link' ? $t('reverse_invite_send.create_link') : $t('button.reverse_share_invite_send') }}
         </button>
         <button class="secondary close-button" @click="reverseInviteActive = false">
           <CircleX />
@@ -156,6 +280,69 @@ defineExpose({
     pointer-events: auto;
     .user-form {
       transform: translate(-50%, 0%);
+    }
+  }
+}
+
+.mode-toggle {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+
+  .mode-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--panel-item-background-color);
+    color: var(--panel-text-color);
+    border: 1px solid var(--panel-border-color, transparent);
+    cursor: pointer;
+    opacity: 0.65;
+    transition: all 0.2s ease;
+
+    &.active {
+      opacity: 1;
+      border-color: var(--primary-button-background-color);
+      background: var(--primary-button-background-color);
+      color: var(--primary-button-text-color);
+    }
+  }
+}
+
+.link-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--panel-text-color);
+
+  .link-result-label {
+    font-weight: 600;
+  }
+
+  .link-result-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .link-url {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      background: var(--panel-item-background-color);
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+    .copy-link {
+      width: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
     }
   }
 }

@@ -73,8 +73,30 @@ onMounted(async () => {
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
-  // Now try to refresh (if user is already logged in, this will accept the pending invite)
-  attemptRefresh()
+  // Determine the initial auth state before revealing the UI, so we can show a
+  // loading screen instead of flashing the login form.
+  reverseShareToken.value = urlParams.get('invite_code')
+  if (reverseShareToken.value) {
+    try {
+      const authData = await acceptReverseShareInvite(reverseShareToken.value)
+      // The accept response already contains a valid access token + guest auth data
+      store.authSuccess(authData)
+      // TODO: Disabled the "invite accepted" toast for guest reverse-share links.
+      // It is redundant since the guest already knows the invite was accepted
+      // the moment they clicked the link. Re-enable with:
+      //   toast.success(t.value('auth.invite_accepted'))
+      //remove the invite token from the url
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } catch (error) {
+      //remove the invite token from the url
+      window.history.replaceState({}, document.title, window.location.pathname)
+      toast.error(t.value('auth.failed_to_accept_invite'))
+    }
+  } else {
+    // If the user is already logged in, this will also accept any pending invite by ID
+    await attemptRefresh()
+  }
+  store.setBootstrapDone(true)
 
   getAvailableAuthProviders().then((data) => {
     authProviders.value = data
@@ -87,22 +109,6 @@ onMounted(async () => {
   } catch (error) {
     // Self-registration not available
     selfRegistrationEnabled.value = false
-  }
-
-  // Grab reverse share token from url (for guest users)
-  reverseShareToken.value = urlParams.get('invite_code')
-  if (reverseShareToken.value) {
-    try {
-      await acceptReverseShareInvite(reverseShareToken.value)
-      toast.success(t.value('auth.invite_accepted'))
-      //remove the invite token from the url
-      window.history.replaceState({}, document.title, window.location.pathname)
-      attemptRefresh()
-    } catch (error) {
-      //remove the invite token from the url
-      window.history.replaceState({}, document.title, window.location.pathname)
-      toast.error(t.value('auth.failed_to_accept_invite'))
-    }
   }
 })
 
