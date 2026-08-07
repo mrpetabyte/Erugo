@@ -113,7 +113,7 @@ Route::get('/shares/{share}', function ($shareId) {
 
     $theme = Theme::where('active', true)->first();
 
-    return view('app', ['settings' => $indexedSettings, 'theme' => $theme]);
+    return view('app', ['settings' => $indexedSettings, 'theme' => $theme, 'isDark' => $theme && $theme->isDark()]);
 });
 
 // Direct download route with filename in URL (for wget compatibility - wget uses URL path for filename)
