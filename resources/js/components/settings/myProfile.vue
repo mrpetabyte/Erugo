@@ -357,7 +357,7 @@ const handleUnlinkProvider = async (provider) => {
 
 <style lang="scss" scoped>
 .profile-card {
-  width: 450px;
+  width: min(450px, 100%);
   border-radius: 10px;
   background: var(--panel-item-background-color);
 

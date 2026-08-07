@@ -18,6 +18,10 @@
 // Main components
 .upload-form {
   width: 100%;
+  // Anchor the absolutely-positioned progress overlay to the form itself.
+  // Without this, disabling backdrop-filter on small screens removes the
+  // containing block and the overlay stretches across the whole viewport.
+  position: relative;
   @include flex-column;
   justify-content: center;
   background: var(--uploader-header-background-color);
@@ -246,22 +250,19 @@ html[data-theme="dark"] .guest-name-field.is-guest input {
 }
 
 .progress-bar-container {
-  margin-top: -20px;
-  background: var(--panel-item-background-color);
-  border-radius: var(--panel-border-radius);
+  // Covers the upload form exactly (.upload-form is position: relative).
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  position: absolute;
+  background: var(--panel-item-background-color);
+  border-radius: var(--panel-border-radius);
   opacity: 0;
-  transition: all 0.3s ease-in-out;
-  left: 0;
-  right: 0;
-  top: 20px;
-  bottom: 0;
-  z-index: 1000;
   pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 
   &.visible {
     opacity: 1;
@@ -334,13 +335,16 @@ html[data-theme="dark"] .guest-name-field.is-guest input {
     font-size: 24px;
     color: var(--panel-text-color);
     font-weight: 600;
-   
+
     width: auto;
+    max-width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     text-align: center;
+    flex-wrap: wrap;
+    gap: 10px;
 
     padding: 10px;
     border-radius: 5px;
@@ -357,16 +361,12 @@ html[data-theme="dark"] .guest-name-field.is-guest input {
       background: var(--panel-section-background-color-alt);
       padding: 5px 20px;
       border-radius: var(--panel-border-radius);
-      margin-right: 10px;
       // Use tabular numbers so all digits have equal width (prevents jiggling)
       font-variant-numeric: tabular-nums;
       // Prevent layout shift by keeping items from shrinking
       flex-shrink: 0;
+      white-space: nowrap;
       text-align: center;
-      
-      &:last-child {
-        margin-right: 0;
-      }
       
       // Set minimum widths to accommodate typical max values
       &.percentage-text {
@@ -524,5 +524,11 @@ html[data-theme="dark"] .guest-name-field.is-guest input {
   .expiry-settings-container {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+  }
+
+  // While uploading, give the form extra height so the progress overlay has
+  // room for the stat chips, which wrap onto two rows on narrow screens.
+  .upload-form.is-uploading {
+    min-height: 220px;
   }
 }

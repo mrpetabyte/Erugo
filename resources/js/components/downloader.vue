@@ -212,31 +212,33 @@ const filesByDirectory = computed(() => {
       </div>
     </template>
     <template v-else>
-      <template v-if="shareExpired">
-        <h1>
-          <HeartCrack />
-          {{ $t('share.expired') }}
-        </h1>
-        <p>{{ $t('share.expired.message') }}</p>
-      </template>
-      <template v-else-if="downloadLimitReached">
-        <h1>
-          <TrendingDown />
-          {{ $t('share.download_limit_reached') }}
-        </h1>
-        <p>
-          {{ $t('share.download_limit_reached.message') }}
-        </p>
-      </template>
-      <template v-else-if="shareNotFound">
-        <div class="my-5">
-          <FileX />
-        </div>
-        <h1>
-          {{ $t('share.not_found') }}
-        </h1>
-      </template>
-      <h1 v-else>{{ $t('share.data_loading') }}</h1>
+      <div class="share-status">
+        <template v-if="shareExpired">
+          <h1>
+            <HeartCrack />
+            {{ $t('share.expired') }}
+          </h1>
+          <p>{{ $t('share.expired.message') }}</p>
+        </template>
+        <template v-else-if="downloadLimitReached">
+          <h1>
+            <TrendingDown />
+            {{ $t('share.download_limit_reached') }}
+          </h1>
+          <p>
+            {{ $t('share.download_limit_reached.message') }}
+          </p>
+        </template>
+        <template v-else-if="shareNotFound">
+          <div class="my-5">
+            <FileX />
+          </div>
+          <h1>
+            {{ $t('share.not_found') }}
+          </h1>
+        </template>
+        <h1 v-else>{{ $t('share.data_loading') }}</h1>
+      </div>
     </template>
   </div>
 </template>

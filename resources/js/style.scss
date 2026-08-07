@@ -414,7 +414,7 @@ body {
   z-index: 101;
   padding: 20px;
   border-radius: 10px;
-  width: 400px;
+  width: min(400px, 100%);
   .auth-container-inner {
     display: flex;
     flex-direction: column;

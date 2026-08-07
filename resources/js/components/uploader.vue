@@ -832,7 +832,7 @@ const filesByDirectory = computed(() => {
 </script>
 
 <template>
-  <div class="upload-form">
+  <div class="upload-form" :class="{ 'is-uploading': currentlyUploading }">
     <div
       class="upload-invite-label"
       v-if="store.getReverseShareLabel()"

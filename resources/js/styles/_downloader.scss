@@ -17,6 +17,12 @@
     font-weight: bold;
     margin-bottom: 10px;
   }
+  // Status states (not found / expired / limit reached / loading): the panel
+  // itself has no horizontal padding, so inset the message text here.
+  .share-status {
+    padding: 0 20px;
+    text-align: center;
+  }
   .total-size,
   .share-expires {
     color: var(--panel-text-color);
