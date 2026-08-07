@@ -399,7 +399,7 @@
   "full_name": "Vollständiger Name",
   "guest": {
     "upload_success": "Upload erfolgreich!",
-    "upload_success_message": "Die Person, die diese Dateien angefordert hat, erhält eine E-Mail mit einem Download-Link.",
+    "upload_success_message": "Die Dateien wurden erfolgreich versendet.",
     "your_name": "Dein Name (für die Zuordnung)",
     "guest_user": "Gastnutzer (anonym)",
     "upload_more": "Weitere Dateien hochladen"
@@ -1005,6 +1005,7 @@
       "including": "einschließlich:"
     },
     "not_found": "Die von Ihnen gesuchte Freigabe wurde nicht gefunden. Möglicherweise müssen Sie sich anmelden, um Zugriff zu erhalten.",
+    "not_found.login": "Mit Ihrem Konto anmelden",
     "passwordNotProtected": "Offene Freigabe",
     "passwordProtected": "Passwortgeschützt"
   },

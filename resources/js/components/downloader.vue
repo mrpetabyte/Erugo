@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { niceFileSize, timeUntilExpiration, getApiUrl, niceFileType, niceFileName } from '../utils'
-import { FileIcon, HeartCrack, TrendingDown, FileX, Boxes } from 'lucide-vue-next'
-import { getShare } from '../api'
+import { FileIcon, HeartCrack, TrendingDown, FileX, Boxes, KeyRound } from 'lucide-vue-next'
+import { getShare, logout } from '../api'
 import { domError } from '../domData'
 import { useToast } from 'vue-toastification'
 import { useTranslate } from '@tolgee/vue'
@@ -56,6 +56,14 @@ const fetchShare = async () => {
       shareNotFound.value = true
     }
   }
+}
+
+const goToLogin = async () => {
+  // Remember where the user wanted to go so we can return after login
+  sessionStorage.setItem('post_login_redirect', window.location.pathname)
+  // End any active (guest) session so the login form is shown
+  await logout()
+  window.location.href = '/'
 }
 
 const downloadFiles = () => {
@@ -236,6 +244,12 @@ const filesByDirectory = computed(() => {
           <h1>
             {{ $t('share.not_found') }}
           </h1>
+          <div class="download-button-container">
+            <button class="download-button" @click="goToLogin">
+              <KeyRound />
+              {{ $t('share.not_found.login') }}
+            </button>
+          </div>
         </template>
         <h1 v-else>{{ $t('share.data_loading') }}</h1>
       </div>

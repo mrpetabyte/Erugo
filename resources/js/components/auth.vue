@@ -123,6 +123,14 @@ const attemptLogin = async () => {
     store.authSuccess(data)
     toast.success(t.value('auth.login_successful'))
 
+    // Return the user to where they came from (e.g. a share link that required login)
+    const postLoginRedirect = sessionStorage.getItem('post_login_redirect')
+    if (postLoginRedirect) {
+      sessionStorage.removeItem('post_login_redirect')
+      window.location.href = postLoginRedirect
+      return
+    }
+
     // If there's a pending invite, accept it after successful login
     if (hasInviteIdPending.value && pendingInviteId.value) {
       try {
