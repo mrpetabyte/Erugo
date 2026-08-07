@@ -7,8 +7,11 @@
         max_size 500MB
     }
 
-    # Enable Gzip compression
-    encode gzip
+    # Enable Gzip compression (skip binary upload/download streams proxied to tusd)
+    @compressible {
+        not path /files/*
+    }
+    encode @compressible gzip
 
     # Simplified logging
     log {

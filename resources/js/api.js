@@ -1388,7 +1388,11 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
       httpStack: urlRewritingHttpStack,
       retryDelays: [0, 1000, 3000, 5000],
       chunkSize: 20 * 1024 * 1024, // 20MB chunks
-      parallelUploads: 10,
+      // Sweet spot for SSD backend with concurrent uploaders behind a
+      // single Cloudflare tunnel: 10 streams fought itself for bandwidth
+      // (and multiplied by every concurrent user). 3 keeps one pipe full
+      // without saturating the tunnel with per-stream overhead.
+      parallelUploads: 3,
       removeFingerprintOnSuccess: false, // Disable clean up fingerprint after successful upload. Allow resume with multi-file
       metadata: {
         filename: file.name,
