@@ -24,8 +24,16 @@ class cleanSpecificShares implements ShouldQueue
     public function handle(): void
     {
         foreach ($this->shareIds as $shareId) {
-            $share = Share::find($shareId);
-            if ($share && $share->user_id === $this->userId) {
+            $share = Share::where('id', $shareId)
+                ->where(function ($query) {
+                    $query->where('user_id', $this->userId)
+                        ->orWhereHas('invite', function ($inviteQuery) {
+                            $inviteQuery->where('user_id', $this->userId);
+                        });
+                })
+                ->first();
+
+            if ($share) {
                 $share->cleanFiles(true);
             }
         }
