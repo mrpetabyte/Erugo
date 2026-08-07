@@ -1,5 +1,7 @@
 # FORK Changelog
 
+> **Translation policy of this fork:** Only **English and German** are actively maintained and offered in the UI. The language selector has been reduced to these two languages, and the other locale files (`fr`, `it`, `nl`, `pt`, `pt-BR`) still exist but are no longer updated when UI strings change.
+
 ## Reverse Shares
 - Reverse Shares: Add option for link-only invite
 - Reverse Shares: Remove option for guest email invites (only existing users can be invited via email)
@@ -43,5 +45,6 @@
 - Forbidden API responses no longer log users out; logout is reserved for expired sessions
 
 ## Translations
+- Language selector now offers only English and German; other locales are no longer maintained in this fork
 - Major and continued German translation improvements
 - Added upload progress title translations for all supported locales

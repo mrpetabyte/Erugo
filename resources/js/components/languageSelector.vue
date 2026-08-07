@@ -14,13 +14,11 @@ const showLanguageSelector = computed(() => {
 })
 
 // Define available languages as a data structure
+// Fork note: this fork only maintains English and German translations,
+// so the selector is intentionally limited to these two languages.
 const languages = [
   { code: 'en', name: 'English', flag: 'gb' },
-  { code: 'de', name: 'Deutsch', flag: 'de' },
-  { code: 'fr', name: 'Français', flag: 'fr' },
-  { code: 'it', name: 'Italiano', flag: 'it' },
-  { code: 'nl', name: 'Nederlands', flag: 'nl' },
-  { code: 'pt', name: 'Português', flag: 'pt' }
+  { code: 'de', name: 'Deutsch', flag: 'de' }
 ]
 
 const handleClickOutside = (event) => {
