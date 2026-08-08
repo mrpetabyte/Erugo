@@ -233,13 +233,15 @@ watch(
     </div>
 
     <!-- loading: full-screen splash shown while the initial auth state is being determined -->
-    <div class="loading-screen" v-if="isLoading">
-      <div class="loading-screen-inner" :class="{ 'is-loaded': logoLoaded }">
-        <img :src="logoUrl" :style="{ width: `${logoWidth}px` }" alt="Erugo" class="loading-logo" @load="markLogoLoaded" @error="markLogoLoaded" />
-        <h1 class="loading-name">{{ appName }}</h1>
-        <div class="loading-spinner"></div>
+    <Transition name="loading-screen">
+      <div class="loading-screen" v-if="isLoading">
+        <div class="loading-screen-inner" :class="{ 'is-loaded': logoLoaded }">
+          <img :src="logoUrl" :style="{ width: `${logoWidth}px` }" alt="Erugo" class="loading-logo" @load="markLogoLoaded" @error="markLogoLoaded" />
+          <h1 class="loading-name">{{ appName }}</h1>
+          <div class="loading-spinner"></div>
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <div class="main" v-show="!isLoading">
       <!-- auth: shows if user is not logged in and the mode is upload -->
@@ -363,6 +365,15 @@ watch(
       animation: erugo-loading-spin 0.9s linear infinite;
     }
   }
+}
+
+.loading-screen-leave-active {
+  transition: opacity 300ms ease-in-out, filter 300ms ease-in-out;
+}
+
+.loading-screen-leave-to {
+  opacity: 0;
+  filter: blur(10px);
 }
 
 @keyframes erugo-loading-spin {
