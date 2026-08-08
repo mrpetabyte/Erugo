@@ -68,7 +68,7 @@ RUN apk add --no-cache \
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Download and install tusd for the correct architecture
-ENV TUSD_VERSION=2.6.0
+ENV TUSD_VERSION=2.10.0
 RUN TUSD_ARCH="${TARGETARCH}" && \
     if [ "$TUSD_ARCH" = "amd64" ]; then TUSD_ARCH="amd64"; \
     elif [ "$TUSD_ARCH" = "arm64" ]; then TUSD_ARCH="arm64"; \
