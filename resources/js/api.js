@@ -1399,6 +1399,15 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
         filetype: file.type || 'application/octet-stream',
         ...extraMetadata
       },
+      // Partial uploads (parallelUploads) only report their own part size to the
+      // server. Send the full file size here so the backend can enforce the
+      // per-file limit when a part is created, instead of after all parts were
+      // transferred.
+      metadataForPartialUploads: {
+        filename: file.name,
+        filetype: file.type || 'application/octet-stream',
+        filesize: String(file.size)
+      },
       headers: {
         Authorization: `Bearer ${store.jwt}`
       },

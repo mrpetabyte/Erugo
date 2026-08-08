@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\File;
 use App\Models\UploadSession;
 use App\Utils\FileHelper;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Services\SettingsService;
 
@@ -81,10 +82,7 @@ class TusdHooksController extends Controller
 
             if (!$authHeader) {
                 Log::warning('tusd pre-create: No authorization header');
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Unauthorized: No authorization header'
-                ], 401);
+                return $this->rejectUpload(401, 'Unauthorized: No authorization header');
             }
 
             // Extract token from "Bearer <token>"
@@ -95,59 +93,70 @@ class TusdHooksController extends Controller
 
             if (!$user) {
                 Log::warning('tusd pre-create: Invalid token');
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'Unauthorized: Invalid token'
-                ], 401);
+                return $this->rejectUpload(401, 'Unauthorized: Invalid token');
             }
 
-            $fileSize = $payload['Event']['Upload']['Size'] ?? 0;
+            $upload = $payload['Event']['Upload'] ?? [];
+            $isPartial = $upload['IsPartial'] ?? false;
+            $fileSize = $upload['Size'] ?? 0;
+            $metadata = $upload['MetaData'] ?? [];
+
             $settingsService = app(SettingsService::class);
             $maxUploadSize = $settingsService->getMaxUploadSize();
 
             if ($maxUploadSize) {
+                // For partial uploads (created by parallel/concatenated uploads) tusd
+                // only reports the size of this single part. The full file size is sent
+                // by the client in the upload metadata so the per-file limit can be
+                // enforced before all parts have been transferred.
+                $effectiveSize = $fileSize;
+                if ($isPartial && isset($metadata['filesize']) && is_numeric($metadata['filesize'])) {
+                    $effectiveSize = (int) $metadata['filesize'];
+                }
+
                 // Check individual file size
-                if ($fileSize > $maxUploadSize) {
+                if ($effectiveSize > $maxUploadSize) {
                     $maxSizeFormatted = $this->formatBytes($maxUploadSize);
                     Log::warning('tusd pre-create: File exceeds max upload size', [
                         'user_id' => $user->id,
-                        'file_size' => $fileSize,
+                        'file_size' => $effectiveSize,
                         'max_size' => $maxUploadSize
                     ]);
-                    return response()->json([
-                        'ok' => false,
-                        'message' => "File size exceeds maximum allowed size of {$maxSizeFormatted}"
-                    ], 413);
+                    return $this->rejectUpload(413, "File size exceeds maximum allowed size of {$maxSizeFormatted}");
                 }
 
-                // Check cumulative size of all pending uploads for this user
+                // Check cumulative size of all staged uploads for this user.
                 // This prevents malicious users from bypassing frontend validation
-                // by uploading multiple files that together exceed the limit
-                $pendingUploadsSize = UploadSession::where('user_id', $user->id)
-                    ->whereIn('status', ['pending', 'complete'])
-                    ->sum('filesize');
+                // by uploading multiple files that together exceed the limit.
+                //
+                // Partial uploads are NOT tracked as upload sessions (see postCreate)
+                // and the final concatenated upload reports the full file size, so
+                // every staged byte is counted exactly once here. Checking partial
+                // uploads as well would count the same bytes multiple times.
+                if (!$isPartial) {
+                    $pendingUploadsSize = UploadSession::where('user_id', $user->id)
+                        ->whereIn('status', ['pending', 'complete'])
+                        ->sum('filesize');
 
-                $totalSizeAfterUpload = $pendingUploadsSize + $fileSize;
+                    $totalSizeAfterUpload = $pendingUploadsSize + $effectiveSize;
 
-                if ($totalSizeAfterUpload > $maxUploadSize) {
-                    $maxSizeFormatted = $this->formatBytes($maxUploadSize);
-                    $currentSizeFormatted = $this->formatBytes($pendingUploadsSize);
+                    if ($totalSizeAfterUpload > $maxUploadSize) {
+                        $maxSizeFormatted = $this->formatBytes($maxUploadSize);
+                        $currentSizeFormatted = $this->formatBytes($pendingUploadsSize);
 
-                    Log::warning('tusd pre-create: Cumulative upload size exceeds max', [
-                        'user_id' => $user->id,
-                        'file_size' => $fileSize,
-                        'pending_size' => $pendingUploadsSize,
-                        'total_would_be' => $totalSizeAfterUpload,
-                        'max_size' => $maxUploadSize
-                    ]);
+                        Log::warning('tusd pre-create: Cumulative upload size exceeds max', [
+                            'user_id' => $user->id,
+                            'file_size' => $effectiveSize,
+                            'pending_size' => $pendingUploadsSize,
+                            'total_would_be' => $totalSizeAfterUpload,
+                            'max_size' => $maxUploadSize
+                        ]);
 
-                    // Clean up all pending uploads for this user since they're trying to exceed the limit
-                    $this->cleanupPendingUploads($user->id);
-
-                    return response()->json([
-                        'ok' => false,
-                        'message' => "Total upload size would exceed maximum allowed size of {$maxSizeFormatted}. Current pending uploads: {$currentSizeFormatted}. All pending uploads have been cancelled."
-                    ], 413);
+                        // Only reject this upload. Do NOT delete the user's other
+                        // staged uploads here: destroying them used to kill entire
+                        // in-progress batches. Stale uploads expire via maintainDb.
+                        return $this->rejectUpload(413, "Total upload size would exceed maximum allowed size of {$maxSizeFormatted}. Current staged uploads: {$currentSizeFormatted}.");
+                    }
                 }
             }
 
@@ -158,7 +167,17 @@ class TusdHooksController extends Controller
 
             return response()->json(['ok' => true]);
 
+        } catch (JWTException $e) {
+            // Invalid or expired token - reject cleanly. Retrying would never succeed.
+            Log::warning('tusd pre-create: JWT error', [
+                'error' => $e->getMessage()
+            ]);
+            return $this->rejectUpload(401, 'Unauthorized: ' . $e->getMessage());
+
         } catch (\Exception $e) {
+            // Unexpected internal error: respond with non-2XX so tusd treats this as
+            // an internal hook failure (hook is retried, then a 500 is sent to the
+            // client which tus clients may retry - appropriate for transient errors).
             Log::error('tusd pre-create error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -166,46 +185,31 @@ class TusdHooksController extends Controller
 
             return response()->json([
                 'ok' => false,
-                'message' => 'Unauthorized: ' . $e->getMessage()
-            ], 401);
+                'message' => 'Internal error while validating upload'
+            ], 500);
         }
     }
 
     /**
-     * Clean up all pending uploads for a user (used when they exceed the limit)
+     * Build a hook response that rejects the upload with a meaningful error.
+     *
+     * tusd only honours hook responses with a 2XX status code; a non-2XX hook
+     * response is treated as an internal hook failure and surfaced to the client
+     * as a generic 500 (which tus clients blindly retry without ever showing the
+     * real reason). Returning 200 with RejectUpload + HTTPResponse makes tusd
+     * forward the given status and body to the client immediately instead.
      */
-    private function cleanupPendingUploads(int $userId): void
+    private function rejectUpload(int $status, string $message)
     {
-        $sessions = UploadSession::where('user_id', $userId)
-            ->whereIn('status', ['pending', 'complete'])
-            ->get();
-
-        foreach ($sessions as $session) {
-            // Delete the uploaded file from disk
-            $uploadPath = storage_path('app/uploads/' . $session->upload_id);
-            if (file_exists($uploadPath)) {
-                unlink($uploadPath);
-            }
-            // Also delete the .info file that tusd creates
-            $infoPath = $uploadPath . '.info';
-            if (file_exists($infoPath)) {
-                unlink($infoPath);
-            }
-
-            // Delete associated File record if exists
-            if ($session->file_id) {
-                $file = File::find($session->file_id);
-                if ($file) {
-                    $file->delete();
-                }
-            }
-
-            $session->delete();
-        }
-
-        Log::info('tusd: Cleaned up pending uploads for user exceeding limit', [
-            'user_id' => $userId,
-            'sessions_deleted' => $sessions->count()
+        return response()->json([
+            'HTTPResponse' => [
+                'StatusCode' => $status,
+                'Body' => json_encode(['message' => $message]),
+                'Header' => [
+                    'Content-Type' => 'application/json',
+                ],
+            ],
+            'RejectUpload' => true,
         ]);
     }
 
@@ -215,17 +219,28 @@ class TusdHooksController extends Controller
     protected function postCreate(Request $request, array $payload)
     {
         try {
+            $upload = $payload['Event']['Upload'] ?? [];
+
+            // Partial uploads (created by parallel/concatenated uploads) are only
+            // temporary parts of a larger file and are never referenced by the
+            // client. They must not be tracked as upload sessions: the final
+            // concatenated upload gets its own session, so tracking partials would
+            // count the same bytes multiple times and leak sessions indefinitely.
+            if ($upload['IsPartial'] ?? false) {
+                return response()->json(['ok' => true]);
+            }
+
             // Extract authorization header to get user
             $authHeader = $payload['Event']['HTTPRequest']['Header']['Authorization'][0] ?? null;
             $token = str_replace('Bearer ', '', $authHeader);
             $user = JWTAuth::setToken($token)->authenticate();
 
             // Get metadata from the upload
-            $metadata = $payload['Event']['Upload']['MetaData'] ?? [];
+            $metadata = $upload['MetaData'] ?? [];
             $filename = $metadata['filename'] ?? 'unknown';
-            $filesize = $payload['Event']['Upload']['Size'] ?? 0;
+            $filesize = $upload['Size'] ?? 0;
             $filetype = $metadata['filetype'] ?? 'application/octet-stream';
-            $uploadId = $payload['Event']['Upload']['ID'] ?? null;
+            $uploadId = $upload['ID'] ?? null;
 
             // Security: Validate upload ID is a safe hex string
             if (!$uploadId || !preg_match('/^[a-f0-9]+$/i', $uploadId)) {
@@ -271,7 +286,16 @@ class TusdHooksController extends Controller
     protected function postFinish(Request $request, array $payload)
     {
         try {
-            $uploadId = $payload['Event']['Upload']['ID'] ?? null;
+            $upload = $payload['Event']['Upload'] ?? [];
+
+            // Partial uploads (from parallel/concatenated uploads) are not tracked
+            // as upload sessions (see postCreate), so there is nothing to do. Skipping
+            // them here also avoids creating orphaned File records for partial data.
+            if ($upload['IsPartial'] ?? false) {
+                return response()->json(['ok' => true]);
+            }
+
+            $uploadId = $upload['ID'] ?? null;
 
             // Security: Validate upload ID is a safe hex string (tusd generates 32-char hex IDs)
             if (!$uploadId || !preg_match('/^[a-f0-9]+$/i', $uploadId)) {
@@ -281,11 +305,10 @@ class TusdHooksController extends Controller
                 return response()->json(['ok' => true]);
             }
 
-            $metadata = $payload['Event']['Upload']['MetaData'] ?? [];
+            $metadata = $upload['MetaData'] ?? [];
             $filename = $metadata['filename'] ?? 'unknown';
-            $filesize = $payload['Event']['Upload']['Size'] ?? 0;
+            $filesize = $upload['Size'] ?? 0;
             $filetype = $metadata['filetype'] ?? 'application/octet-stream';
-            $storagePath = $payload['Event']['Upload']['Storage']['Path'] ?? null;
             $isBundle = ($metadata['isBundle'] ?? 'false') === 'true';
 
             // Find the upload session
