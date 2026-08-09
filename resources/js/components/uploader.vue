@@ -54,11 +54,31 @@ const uploadStartTime = ref(null)
 const uploadTick = ref(0) // Reactive trigger for time-based computed properties
 let uploadTickInterval = null
 
-// Speed calculation baseline (reset on pause/resume to keep speed accurate)
+// Speed calculation using a sliding window of recent progress samples,
+// reset on pause/resume so the measured window never spans inactive time.
+const SPEED_WINDOW_MS = 6000 // average throughput over the last 6 seconds
+const SPEED_SAMPLE_INTERVAL_MS = 1000 // fallback sample cadence if no bytes change
+const speedHistory = ref([]) // [{ t: ms, bytes: uploadedBytes }], oldest -> newest
 const speedBaselineTime = ref(null)
-const speedBaselineBytes = ref(0)
 const accumulatedElapsedTime = ref(0) // Track total elapsed time across pause/resume cycles
 const lastKnownSpeed = ref(0) // Store speed before pausing
+
+// Record a throughput sample and prune anything older than the window.
+const recordSpeedSample = () => {
+  const now = Date.now()
+  const bytes = uploadedBytes.value
+  const history = speedHistory.value
+  const last = history[history.length - 1]
+  // Skip duplicates: only add a sample when bytes moved or the interval elapsed
+  if (!last || bytes !== last.bytes || now - last.t >= SPEED_SAMPLE_INTERVAL_MS) {
+    history.push({ t: now, bytes })
+    const cutoff = now - SPEED_WINDOW_MS
+    while (history.length > 1 && history[0].t < cutoff) {
+      history.shift()
+    }
+    speedHistory.value = history
+  }
+}
 
 // Upload speed and time tracking
 const uploadSpeed = computed(() => {
@@ -66,11 +86,20 @@ const uploadSpeed = computed(() => {
   const _ = uploadTick.value // Force reactivity on tick
   // When paused (no baseline time), return the last known speed
   if (!speedBaselineTime.value) return lastKnownSpeed.value
-  const bytesSinceBaseline = uploadedBytes.value - speedBaselineBytes.value
-  if (bytesSinceBaseline <= 0) return lastKnownSpeed.value
-  const elapsedSeconds = (Date.now() - speedBaselineTime.value) / 1000
-  if (elapsedSeconds <= 0) return lastKnownSpeed.value
-  return bytesSinceBaseline / elapsedSeconds // bytes per second
+  const history = speedHistory.value
+  if (history.length < 2) return lastKnownSpeed.value
+  const now = Date.now()
+  // Find the first sample still inside the rolling window
+  let firstIdx = 0
+  while (firstIdx < history.length - 1 && now - history[firstIdx].t > SPEED_WINDOW_MS) {
+    firstIdx++
+  }
+  const first = history[firstIdx]
+  const last = history[history.length - 1]
+  const bytesDelta = last.bytes - first.bytes
+  const elapsedSeconds = (last.t - first.t) / 1000
+  if (bytesDelta <= 0 || elapsedSeconds <= 0) return lastKnownSpeed.value
+  return bytesDelta / elapsedSeconds // bytes per second over the window
 })
 
 const timeElapsed = computed(() => {
@@ -80,10 +109,16 @@ const timeElapsed = computed(() => {
   return accumulatedElapsedTime.value + (Date.now() - speedBaselineTime.value) / 1000 // seconds
 })
 
+// Smoothed time-remaining estimate so the UI doesn't jitter every second.
+const SMOOTHING_FACTOR = 0.3
+let etaSmoothing = null
 const timeRemaining = computed(() => {
   if (uploadSpeed.value <= 0 || totalBytes.value === 0) return 0
-  const bytesRemaining = totalBytes.value - uploadedBytes.value
-  return bytesRemaining / uploadSpeed.value // seconds
+  const bytesRemaining = Math.max(0, totalBytes.value - uploadedBytes.value)
+  if (bytesRemaining <= 0) return 0
+  const raw = bytesRemaining / uploadSpeed.value // seconds
+  etaSmoothing = etaSmoothing === null ? raw : etaSmoothing + SMOOTHING_FACTOR * (raw - etaSmoothing)
+  return etaSmoothing
 })
 const expiryValue = ref(domData().default_expiry_time)
 const expiryUnit = ref('days')
@@ -359,14 +394,16 @@ const uploadFiles = async () => {
   currentlyUploading.value = true
   isPaused.value = false
   uploadStartTime.value = Date.now()
-  // Initialize speed baseline for accurate speed calculation
   speedBaselineTime.value = Date.now()
-  speedBaselineBytes.value = 0
   accumulatedElapsedTime.value = 0
+  etaSmoothing = null
+  // Start a fresh speed window
+  speedHistory.value = [{ t: Date.now(), bytes: uploadedBytes.value }]
   // Start tick interval for updating time-based computed properties
   if (uploadTickInterval) clearInterval(uploadTickInterval)
   uploadTickInterval = setInterval(() => {
     uploadTick.value++
+    recordSpeedSample()
   }, 1000)
   uploadController.resumeUpload()
 
@@ -530,9 +567,10 @@ const resetUploadState = () => {
     completedFiles.value = []
     uploadStartTime.value = null
     speedBaselineTime.value = null
-    speedBaselineBytes.value = 0
+    speedHistory.value = []
     accumulatedElapsedTime.value = 0
     lastKnownSpeed.value = 0
+    etaSmoothing = null
     uploadTick.value = 0
   }, 1000)
 }
@@ -589,9 +627,10 @@ const togglePause = () => {
     speedBaselineTime.value = null // Stop time tracking while paused
     uploadController.pauseUpload()
   } else {
-    // Resuming: reset baseline for fresh speed calculation
+    // Resuming: reset baseline and start a fresh speed window so the
+    // measured throughput doesn't include the pause period
     speedBaselineTime.value = Date.now()
-    speedBaselineBytes.value = uploadedBytes.value
+    speedHistory.value = [{ t: Date.now(), bytes: uploadedBytes.value }]
     uploadController.resumeUpload()
   }
 }
