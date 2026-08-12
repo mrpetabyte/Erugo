@@ -65,6 +65,9 @@ class Share extends Model
 
   function getExpiredAttribute()
   {
+    if (!$this->expires_at) {
+      return false;
+    }
     return $this->expires_at < now()->addMinutes(1);
   }
 
@@ -82,7 +85,11 @@ class Share extends Model
       $cleanFilesAfterDays = 30;
     }
 
-    return $this->expires_at->addDays($cleanFilesAfterDays);
+    if (!$this->expires_at) {
+      return null;
+    }
+
+    return $this->expires_at->copy()->addDays($cleanFilesAfterDays);
   }
 
   function getDeletedAttribute()
@@ -112,44 +119,49 @@ class Share extends Model
 
   public function cleanFiles($disableEmail = false)
   {
-    try {
-      $filePath = $this->path;
-      $completePath = storage_path('app/shares/' . $filePath);
+    $filePath = $this->path;
+    $completePath = storage_path('app/shares/' . $filePath);
 
-      if (is_dir($completePath)) {
-        //delete all files in the directory
-        $files = glob($completePath . '/*');
+    // Best-effort disk cleanup. A locked, permission-denied, or already-missing
+    // file must never prevent the share from being marked deleted.
+    if (is_dir($completePath)) {
+      $files = glob($completePath . '/*');
+      if ($files !== false) {
         foreach ($files as $file) {
-          unlink($file);
+          @unlink($file);
         }
-        //delete the directory
-        rmdir($completePath);
-      } else {
       }
-      //or is it a zip file?
-      if (is_file($completePath . '.zip')) {
-        unlink($completePath . '.zip');
-      } else {
-      }
-
-      $this->status = 'deleted';
-      $this->save();
-
-      if ($this->invite) {
-        $this->invite->delete();
-      }
-
-      $settingsService = new SettingsService();
-
-      $shouldSend = $settingsService->get('emails_share_deleted_enabled') ?? true;
-
-      if (!$disableEmail && $shouldSend) {
-        sendEmail::dispatch($this->user->email, shareDeletedWarningMail::class, ['share' => $this]);
-      }
-
-      return true;
-    } catch (\Exception $e) {
-      return false;
+      @rmdir($completePath);
     }
+
+    //or is it a zip file?
+    if (is_file($completePath . '.zip')) {
+      @unlink($completePath . '.zip');
+    }
+
+    // Mark as deleted unconditionally: a missing owner, failing email, or
+    // partially-removable files must not leave the share stuck.
+    $this->status = 'deleted';
+    $this->save();
+
+    if ($this->invite) {
+      $this->invite->delete();
+    }
+
+    if (!$disableEmail) {
+      try {
+        $settingsService = new SettingsService();
+        $shouldSend = $settingsService->get('emails_share_deleted_enabled') ?? true;
+
+        // owner may be null (guest uploads / deleted account) - never crash here
+        if ($shouldSend && $this->user) {
+          sendEmail::dispatch($this->user->email, shareDeletedWarningMail::class, ['share' => $this]);
+        }
+      } catch (\Exception $e) {
+        // A notification failure must not prevent the deletion flag.
+      }
+    }
+
+    return true;
   }
 }

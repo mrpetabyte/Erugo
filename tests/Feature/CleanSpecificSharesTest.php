@@ -59,4 +59,43 @@ class CleanSpecificSharesTest extends TestCase
 
         $this->assertNotSame('deleted', $share->fresh()->status);
     }
+
+    public function test_clean_files_marks_deleted_when_owner_is_missing(): void
+    {
+        // Guest uploads create shares with user_id = null; omitting the email
+        // argument previously crashed on $this->user->email and left the share
+        // un-deleted. It must now be marked deleted regardless.
+        $creator = User::factory()->create();
+        $invite = ReverseShareInvite::create([
+            'user_id' => $creator->id,
+            'recipient_name' => 'Guest',
+            'recipient_email' => 'guest@example.com',
+            'invite_code' => 'guest-invite',
+        ]);
+        $share = Share::create([
+            'user_id' => null,
+            'name' => 'Guest share',
+            'path' => 'guest-share',
+            'long_id' => 'guest-share-id',
+            'size' => 0,
+            'file_count' => 0,
+            'expires_at' => Carbon::yesterday(),
+        ]);
+        $share->invite_id = $invite->id;
+        $share->save();
+
+        $result = $share->cleanFiles();
+
+        $this->assertTrue($result);
+        $this->assertSame('deleted', $share->fresh()->status);
+    }
+
+    public function test_accessors_tolerate_null_expires_at(): void
+    {
+        $share = new Share(['user_id' => null, 'name' => 'No expiry', 'status' => 'ready']);
+
+        $this->assertFalse($share->expired);
+        $this->assertNull($share->deletes_at);
+        $this->assertFalse($share->deleted);
+    }
 }
