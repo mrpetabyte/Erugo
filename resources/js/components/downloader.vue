@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { niceFileSize, timeUntilExpiration, getApiUrl, niceFileType, niceFileName } from '../utils'
-import { FileIcon, HeartCrack, TrendingDown, FileX, Boxes, KeyRound } from 'lucide-vue-next'
+import { FileIcon, HeartCrack, TrendingDown, FileX, FolderOpen, KeyRound } from 'lucide-vue-next'
 import { getShare, logout } from '../api'
 import { domError } from '../domData'
 import { useToast } from 'vue-toastification'
@@ -163,7 +163,7 @@ const filesByDirectory = computed(() => {
   <div class="download-panel-content">
     <template v-if="share">
       <h1 class="share-name">
-        <Boxes />
+        <FolderOpen />
         {{ share.name }}
       </h1>
       <div class="stats">
