@@ -47,12 +47,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        // Respond with the same generic error as invalid credentials so the
+        // response doesn't confirm that the account exists (but is disabled).
         if (!$user->active) {
             Auth::logout();
             return response()->json([
                 'status' => 'error',
-                'message' => 'Account is disabled'
-            ], 403);
+                'message' => 'Unauthorized'
+            ], 401);
         }
 
         return $this->respondWithToken($user);
