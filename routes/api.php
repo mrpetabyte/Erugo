@@ -47,8 +47,8 @@ Route::group([], function ($router) {
         Route::post('login', [AuthController::class, 'login'])->name('auth.login')->middleware('throttle:login');
         Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
-        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgotPassword');
-        Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.resetPassword');
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgotPassword')->middleware('throttle:auth');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.resetPassword')->middleware('throttle:auth');
 
         // Self-registration routes
         Route::post('register', [SelfRegistrationController::class, 'register'])->name('auth.register');

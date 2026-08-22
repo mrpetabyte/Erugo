@@ -50,6 +50,13 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Generic per-IP limiter for the remaining public auth endpoints
+        // (password reset, registration, etc.) so they can't be abused for
+        // email flooding or scripted probing.
+        RateLimiter::for('auth', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
         // The 6-digit email verification code is the weakest brute-force
         // surface, so it gets a tighter per-email limit in addition to the
         // per-IP limit. This must stay below the endpoint's own checks.
