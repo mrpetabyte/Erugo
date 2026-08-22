@@ -52,7 +52,7 @@ Route::group([], function ($router) {
 
         // Self-registration routes
         Route::post('register', [SelfRegistrationController::class, 'register'])->name('auth.register');
-        Route::post('verify-email', [SelfRegistrationController::class, 'verifyEmail'])->name('auth.verifyEmail');
+        Route::post('verify-email', [SelfRegistrationController::class, 'verifyEmail'])->name('auth.verifyEmail')->middleware('throttle:verify-email');
         Route::post('resend-verification', [SelfRegistrationController::class, 'resendCode'])->name('auth.resendVerification');
         Route::get('registration-settings', [SelfRegistrationController::class, 'getSettings'])->name('auth.registrationSettings');
     });

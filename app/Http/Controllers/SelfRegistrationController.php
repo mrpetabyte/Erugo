@@ -156,8 +156,10 @@ class SelfRegistrationController extends Controller
             ], 400);
         }
 
-        // Check if code matches
-        if ($user->email_verification_code !== $request->code) {
+        // Check if code matches (constant-time comparison to avoid a
+        // timing side channel that would speed up brute-force attempts)
+        $storedCode = (string) $user->email_verification_code;
+        if ($storedCode === '' || !hash_equals($storedCode, (string) $request->code)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid email or verification code'
