@@ -50,9 +50,33 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        // Generic per-IP limiter for the remaining public auth endpoints
-        // (password reset, registration, etc.) so they can't be abused for
-        // email flooding or scripted probing.
+        // Endpoints that send emails (password reset links, verification codes)
+        // get a per-address hourly cap in addition to a per-IP cap. That bounds
+        // inbox flooding to a few emails per day for one address, even under a
+        // distributed attack. Both keys hash the raw request input, so the 429
+        // response is identical whether or not the account exists.
+        RateLimiter::for('forgot-password', function (Request $request) {
+            return [
+                Limit::perMinute(2)->by($request->ip()),
+                Limit::perHour(3)->by('forgot-password:' . strtolower((string) $request->input('email'))),
+            ];
+        });
+
+        RateLimiter::for('resend-verification', function (Request $request) {
+            return [
+                Limit::perMinute(2)->by($request->ip()),
+                Limit::perHour(3)->by('resend-verification:' . strtolower((string) $request->input('email'))),
+            ];
+        });
+
+        // Registration sends a verification email too, but unique:users already
+        // bounds it to one email per address lifetime, so a per-IP cap is enough.
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(3)->by($request->ip());
+        });
+
+        // Generic per-IP limiter for remaining public auth endpoints
+        // (e.g. reset-password) so scripted probing stays bounded.
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
