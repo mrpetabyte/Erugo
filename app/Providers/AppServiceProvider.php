@@ -6,6 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,5 +40,14 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::prependLocation(storage_path('templates'));
+
+        // Throttle login attempts per IP and per email so both single-source
+        // brute force and distributed password sprays are bounded per account.
+        RateLimiter::for('login', function (Request $request) {
+            return [
+                Limit::perMinute(10)->by($request->ip()),
+                Limit::perMinute(5)->by('login:' . strtolower((string) $request->input('email'))),
+            ];
+        });
     }
 }

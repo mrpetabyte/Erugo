@@ -44,7 +44,7 @@ Route::group([], function ($router) {
 
     //auth
     Route::group(['prefix' => 'auth'], function ($router) {
-        Route::post('login', [AuthController::class, 'login'])->name('auth.login');
+        Route::post('login', [AuthController::class, 'login'])->name('auth.login')->middleware('throttle:login');
         Route::post('refresh', [AuthController::class, 'refresh'])->name('auth.refresh');
         Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgotPassword');
