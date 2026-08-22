@@ -1,8 +1,0 @@
-services:
-  app:
-    image: wardy784/erugo:latest
-    restart: unless-stopped
-    volumes:
-      - /Users/dean/erugo-storage/storage:/var/www/html/storage
-    ports:
-      - "9998:80"
