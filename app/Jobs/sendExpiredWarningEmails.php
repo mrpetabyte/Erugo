@@ -39,6 +39,12 @@ class sendExpiredWarningEmails implements ShouldQueue
       ->get();
 
     foreach ($shares as $share) {
+      if (!$share->user) {
+        // Guest uploads / deleted-owner shares have no recipient - mark sent and skip
+        $share->sent_expired = true;
+        $share->save();
+        continue;
+      }
       sendEmail::dispatch($share->user->email, shareExpiredWarningMail::class, ['share' => $share]);
       $share->sent_expired = true;
       $share->save();

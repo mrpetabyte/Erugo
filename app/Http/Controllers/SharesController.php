@@ -151,7 +151,7 @@ class SharesController extends Controller
       if (!$user) {
         return false;
       }
-      $allowedUser = $share->invite->user;
+      $allowedUser = $share->invite?->user;
       if ($user && $allowedUser && $allowedUser->id == $user->id) {
         return true;
       } else {

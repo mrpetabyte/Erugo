@@ -42,6 +42,12 @@ class sendDeletionWarningEmails implements ShouldQueue
       ->get();
 
     foreach ($shares as $share) {
+      if (!$share->user) {
+        // Guest uploads / deleted-owner shares have no recipient - mark sent and skip
+        $share->sent_deletion_warning = true;
+        $share->save();
+        continue;
+      }
       sendEmail::dispatch($share->user->email, shareDeletionWarningMail::class, ['share' => $share]);
       $share->sent_deletion_warning = true;
       $share->save();

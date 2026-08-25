@@ -22,7 +22,7 @@ class File extends Model
 
     public function user()
     {
-        return $this->share->user();
+        return $this->share?->user;
     }
 
     /**
