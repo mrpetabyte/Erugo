@@ -43,6 +43,10 @@
 - Various security improvements and removal of security vulnerabilities
 - RCE fix in uploads controllers
 - Forbidden API responses no longer log users out; logout is reserved for expired sessions
+- Fixed a 500 error on downloading non-public shares that had no reverse-share invite (null `invite` guard in `SharesController::checkShareAccess`)
+- Harden the share-notification jobs (`sendExpiredWarningEmails`, `sendDeletionWarningEmails`, `sendExpiryWarningEmails`) against ownerless (guest/deleted-account) shares so they no longer crash and retry every night
+- Guarded `File::user()` against a null share relationship
+- Reworked guest-user cleanup in `maintainDb` to run by invite lifecycle instead of an age sweep: expired-unused link invites and their guests are removed together (fixing a nightly foreign-key constraint failure). Invites (and their guests) are kept alive as long as the invite still has a live share, so a share's access and cleanup remain intact until the share itself is deleted at `deletes_at` (`expires_at + clean_files_after_days`)
 
 ## Translations
 - Language selector now offers only English and German; other locales are no longer maintained in this fork
