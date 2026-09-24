@@ -1348,6 +1348,24 @@ const passwordChangeRequired = () => {
 
 const debouncedPasswordChangeRequired = debounce(passwordChangeRequired, 100)
 
+// Single in-flight token refresh shared by all tus requests. With parallel
+// uploads several partial uploads start at the same time and would otherwise
+// each trigger their own refresh.
+let tusTokenRefreshPromise = null
+const refreshTokenForTus = () => {
+  if (!tusTokenRefreshPromise) {
+    tusTokenRefreshPromise = refresh()
+      .then((refreshData) => {
+        store.authSuccess(refreshData)
+        return refreshData
+      })
+      .finally(() => {
+        tusTokenRefreshPromise = null
+      })
+  }
+  return tusTokenRefreshPromise
+}
+
 /**
  * Upload a single file using tus protocol
  * @param {File} file - The file to upload
@@ -1408,30 +1426,28 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
         filetype: file.type || 'application/octet-stream',
         filesize: String(file.size)
       },
-      headers: {
-        Authorization: `Bearer ${store.jwt}`
-      },
-      // Refresh token before each request if it's about to expire
-      // This prevents long uploads from failing due to token expiration
-      onBeforeRequest: function (req) {
-        const now = new Date()
-        const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
+      // Refresh the token before each request if it's about to expire and
+      // always send the *current* token. The Authorization header must not be
+      // a static option: tus copies static headers onto every request, so a
+      // token captured when the Upload was created would still be sent after
+      // a refresh (e.g. for the final concatenation POST of a parallel upload
+      // or for a retry after the device slept), and tusd's pre-create hook
+      // would then reject the expired token with a non-retryable 401.
+      onBeforeRequest: async function (req) {
+        const expiresSoon = store.jwtExpires && store.jwtExpires.getTime() < Date.now() + 5 * 60 * 1000
 
-        // Only attempt refresh if token is expiring soon
-        if (store.jwtExpires && store.jwtExpires < fiveMinutesFromNow) {
-          // Return a Promise so tus waits for the refresh to complete
-          return refresh()
-            .then((refreshData) => {
-              store.authSuccess(refreshData)
-              // Update header with new token
-              req.setHeader('Authorization', `Bearer ${store.jwt}`)
-            })
-            .catch((e) => {
-              console.error('[uploadFileWithTus] Failed to refresh token:', e)
-              // Don't modify header on failure, use existing token
-            })
+        if (expiresSoon) {
+          try {
+            await refreshTokenForTus()
+          } catch (e) {
+            console.error('[uploadFileWithTus] Failed to refresh token:', e)
+            // Fall through and use the existing token
+          }
         }
-        // No refresh needed - don't touch headers, let static config apply
+
+        if (store.jwt) {
+          req.setHeader('Authorization', `Bearer ${store.jwt}`)
+        }
       },
       onError: (error) => {
         console.error('tus upload error:', error)
