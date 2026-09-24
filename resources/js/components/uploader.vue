@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import {
   FilePlus,
   FolderPlus,
@@ -219,6 +219,73 @@ onMounted(async () => {
 
   // Check for interrupted upload
   checkForInterruptedUpload()
+})
+
+// Keep the screen awake while uploading. When a phone auto-locks, mobile
+// browsers suspend the page and kill its network requests, which interrupts
+// the upload. The Screen Wake Lock API prevents the auto-lock (it is not
+// available everywhere, so failures are ignored). The browser releases the
+// lock whenever the page is hidden, so it is re-acquired when it becomes
+// visible again.
+let wakeLock = null
+let wakeLockPending = false
+
+const requestWakeLock = async () => {
+  if (!('wakeLock' in navigator) || wakeLock || wakeLockPending || document.visibilityState !== 'visible') {
+    return
+  }
+  wakeLockPending = true
+  try {
+    const lock = await navigator.wakeLock.request('screen')
+    if (!currentlyUploading.value) {
+      // Upload finished while the request was pending
+      await lock.release()
+      return
+    }
+    wakeLock = lock
+    lock.addEventListener('release', () => {
+      if (wakeLock === lock) {
+        wakeLock = null
+      }
+    })
+  } catch (e) {
+    console.warn('Screen wake lock not available:', e)
+  } finally {
+    wakeLockPending = false
+  }
+}
+
+const releaseWakeLock = async () => {
+  const lock = wakeLock
+  wakeLock = null
+  if (lock) {
+    try {
+      await lock.release()
+    } catch (e) {
+      // already released
+    }
+  }
+}
+
+const handleVisibilityChange = () => {
+  if (currentlyUploading.value && document.visibilityState === 'visible') {
+    requestWakeLock()
+  }
+}
+
+watch(currentlyUploading, (uploading) => {
+  if (uploading) {
+    requestWakeLock()
+  } else {
+    releaseWakeLock()
+  }
+})
+
+document.addEventListener('visibilitychange', handleVisibilityChange)
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  releaseWakeLock()
 })
 
 // Persist the guest's name across "Upload More" remounts (editable per batch)
