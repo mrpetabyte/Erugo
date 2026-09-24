@@ -1366,6 +1366,43 @@ const refreshTokenForTus = () => {
   return tusTokenRefreshPromise
 }
 
+// Set when tusd answered 401 so the next tus request refreshes the token
+// even though the locally known expiry says it is still valid.
+let tusForceTokenRefresh = false
+
+// Retry schedule for tus requests. tus resets the attempt counter whenever a
+// retry makes progress, so this only has to bridge a single outage. Mobile
+// browsers suspend or kill network requests while the screen is locked or the
+// tab is in the background, and the connection often needs a while to come
+// back after wake-up. The previous tus default ([0, 1s, 3s, 5s]) gave up after
+// ~9 seconds, failing the file and with it the rest of the batch. This covers
+// roughly ten minutes of connectivity loss.
+const TUS_RETRY_DELAYS = [0, 1000, 3000, 5000, 10000, 15000, 30000, 30000, 60000, 60000, 60000, 60000, 60000, 60000, 60000]
+
+// Maximum retries for a 401 from tusd. The retry uses a freshly refreshed
+// token; if that is rejected as well the session is really gone.
+const TUS_MAX_UNAUTHORIZED_RETRIES = 2
+
+/**
+ * Decide whether a failed tus request should be retried.
+ *
+ * Unlike the tus default this also retries network errors while the browser
+ * reports being offline (navigator.onLine is false while a phone's radio is
+ * suspended; the default would fail immediately without any retry) and
+ * retries 401s once the token has been refreshed.
+ */
+const shouldRetryTusRequest = (err, retryAttempt) => {
+  const status = err.originalResponse ? err.originalResponse.getStatus() : 0
+
+  // No response at all: network error, request killed while the device slept, etc.
+  if (!status) return true
+
+  if (status === 401) return retryAttempt < TUS_MAX_UNAUTHORIZED_RETRIES
+
+  // Server errors, conflicts (offset mismatch) and locked uploads are transient.
+  return status >= 500 || status === 409 || status === 423
+}
+
 /**
  * Upload a single file using tus protocol
  * @param {File} file - The file to upload
@@ -1404,7 +1441,8 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
     const upload = new tus.Upload(file, {
       endpoint: tusdEndpoint,
       httpStack: urlRewritingHttpStack,
-      retryDelays: [0, 1000, 3000, 5000],
+      retryDelays: TUS_RETRY_DELAYS,
+      onShouldRetry: shouldRetryTusRequest,
       chunkSize: 20 * 1024 * 1024, // 20MB chunks
       // Sweet spot for SSD backend with concurrent uploaders behind a
       // single Cloudflare tunnel: 10 streams fought itself for bandwidth
@@ -1436,9 +1474,10 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
       onBeforeRequest: async function (req) {
         const expiresSoon = store.jwtExpires && store.jwtExpires.getTime() < Date.now() + 5 * 60 * 1000
 
-        if (expiresSoon) {
+        if (expiresSoon || tusForceTokenRefresh) {
           try {
             await refreshTokenForTus()
+            tusForceTokenRefresh = false
           } catch (e) {
             console.error('[uploadFileWithTus] Failed to refresh token:', e)
             // Fall through and use the existing token
@@ -1447,6 +1486,14 @@ export const uploadFileWithTus = (file, onProgress, onComplete, onError, extraMe
 
         if (store.jwt) {
           req.setHeader('Authorization', `Bearer ${store.jwt}`)
+        }
+      },
+      onAfterResponse: function (req, res) {
+        // tusd rejected the token (e.g. it expired while the device slept or
+        // a refresh failed because the network was not back yet). Force a
+        // refresh before the retry instead of resending the same token.
+        if (res.getStatus() === 401) {
+          tusForceTokenRefresh = true
         }
       },
       onError: (error) => {
