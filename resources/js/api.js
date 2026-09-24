@@ -199,34 +199,18 @@ const uploadBundledFiles = async (
       message: 'Creating share...'
     })
 
-    const apiUrl = getApiUrl()
-    const response = await fetchWithAuth(`${apiUrl}/api/uploads/create-share-from-uploads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: `Bearer ${store.jwt}`
-      },
-      body: JSON.stringify({
-        upload_id: uploadId,
-        name: shareName,
-        description: shareDescription,
-        recipients: recipients,
-        uploadIds: [uploadResult.uploadId],
-        filePaths: {}, // Not needed for bundles, paths are in the manifest
-        expiry_date: expiryDate,
-        password: password,
-        password_confirm: passwordConfirm,
-        isBundle: true
-      })
+    const data = await createShareFromUploads({
+      upload_id: uploadId,
+      name: shareName,
+      description: shareDescription,
+      recipients: recipients,
+      uploadIds: [uploadResult.uploadId],
+      filePaths: {}, // Not needed for bundles, paths are in the manifest
+      expiry_date: expiryDate,
+      password: password,
+      password_confirm: passwordConfirm,
+      isBundle: true
     })
-
-    if (!response.ok) {
-      const data = await response.json()
-      throw new Error(data.message || 'Failed to create share from bundle')
-    }
-
-    const data = await response.json()
     console.log('[uploadBundledFiles] Share created successfully')
 
     // Cleanup local storage for the bundle
@@ -1629,6 +1613,65 @@ const clearTusFingerprint = (filename, size) => {
   }
 }
 
+// Delays between attempts of the final create-share request (~5 minutes).
+const CREATE_SHARE_RETRY_DELAYS = [1000, 2000, 5000, 10000, 15000, 30000, 30000, 60000, 60000, 60000]
+// "Not found or not completed" means tusd's post-finish hooks are still
+// running; that only needs a few short retries.
+const CREATE_SHARE_MAX_NOT_COMPLETED_RETRIES = 4
+
+/**
+ * Create a share from completed tus uploads, retrying transient failures.
+ *
+ * Network errors (e.g. the phone went to sleep) and 5xx responses are retried.
+ * This is safe because the backend is idempotent per upload batch
+ * (`upload_id`): if an earlier attempt already created the share, the retry
+ * returns that share.
+ */
+const createShareFromUploads = async (payload) => {
+  let notCompletedRetries = 0
+
+  for (let attempt = 0; ; attempt++) {
+    const canRetry = attempt < CREATE_SHARE_RETRY_DELAYS.length
+    const wait = () => new Promise((resolve) => setTimeout(resolve, CREATE_SHARE_RETRY_DELAYS[attempt]))
+
+    let response
+    try {
+      response = await fetchWithAuth(`${apiUrl}/api/uploads/create-share-from-uploads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+    } catch (error) {
+      // fetch rejects with a TypeError on network failures; anything else
+      // (e.g. session expired) is not worth retrying.
+      if (!(error instanceof TypeError) || !canRetry) {
+        throw error
+      }
+      await wait()
+      continue
+    }
+
+    if (response.ok) {
+      return response.json()
+    }
+
+    const data = await response.json().catch(() => ({}))
+    const errorMessage = data.message || 'Failed to create share from uploads'
+    const retryable =
+      response.status >= 500 ||
+      (errorMessage.includes('not found or not completed') &&
+        notCompletedRetries++ < CREATE_SHARE_MAX_NOT_COMPLETED_RETRIES)
+
+    if (!retryable || !canRetry) {
+      throw new Error(errorMessage)
+    }
+    await wait()
+  }
+}
+
 /**
  * Uploads multiple files using tus protocol
  * @param {Array} files - Array of files to upload
@@ -1783,69 +1826,31 @@ export const uploadFilesInChunks = async (
   })
 
   const uploadIds = results.map((r) => r.uploadId)
-  const maxRetries = 5
-  const baseDelayMs = 500
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const response = await fetchWithAuth(`${apiUrl}/api/uploads/create-share-from-uploads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${store.jwt}`
-        },
-        body: JSON.stringify({
-          upload_id: uploadId,
-          name: shareName,
-          description: shareDescription,
-          recipients: recipients,
-          uploadIds: uploadIds,
-          filePaths: filePaths,
-          expiry_date: expiryDate,
-          password: password,
-          password_confirm: passwordConfirm
-        })
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-
-        // Clean up the local storage manual fingerprints
-        results.forEach((r) => {
-          if (r.uploadId) {
-            clearTusFingerprint(r.filename, r.filesize)
-          }
-        })
-
-        onComplete(data)
-        return
-      }
-
-      const data = await response.json()
-      const errorMessage = data.message || 'Failed to create share from uploads'
-
-      // Check if this is the "not completed" error - worth retrying
-      if (errorMessage.includes('not found or not completed') && attempt < maxRetries - 1) {
-        const delayMs = baseDelayMs * Math.pow(2, attempt) // 500ms, 1000ms, 2000ms, 4000ms
-        await new Promise((resolve) => setTimeout(resolve, delayMs))
-        continue
-      }
-
-      // Non-retryable error or out of retries
-      throw new Error(errorMessage)
-    } catch (error) {
-      // Network errors or thrown errors from above
-      if (attempt === maxRetries - 1) {
-        onError(error)
-        return
-      }
-
-      // If it's a network error, might be worth retrying
-      if (!error.message.includes('not found or not completed')) {
-        onError(error)
-        return
-      }
-    }
+  let data
+  try {
+    data = await createShareFromUploads({
+      upload_id: uploadId,
+      name: shareName,
+      description: shareDescription,
+      recipients: recipients,
+      uploadIds: uploadIds,
+      filePaths: filePaths,
+      expiry_date: expiryDate,
+      password: password,
+      password_confirm: passwordConfirm
+    })
+  } catch (error) {
+    onError(error)
+    return
   }
+
+  // Clean up the local storage manual fingerprints
+  results.forEach((r) => {
+    if (r.uploadId) {
+      clearTusFingerprint(r.filename, r.filesize)
+    }
+  })
+
+  onComplete(data)
 }
