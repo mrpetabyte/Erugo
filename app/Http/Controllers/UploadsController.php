@@ -76,7 +76,7 @@ class UploadsController extends Controller
   public function createShareFromUploads(Request $request)
   {
     $validator = Validator::make($request->all(), [
-      'upload_id' => ['required', 'string'],
+      'upload_id' => ['required', 'string', 'max:200'],
       'name' => ['string', 'max:255'],
       'description' => ['max:500'],
       'uploadIds' => ['required', 'array'],
@@ -117,6 +117,22 @@ class UploadsController extends Controller
         'status' => 'error',
         'message' => 'Unauthorized'
       ], 401);
+    }
+
+    // Idempotency: the client retries this request when the response is lost
+    // (e.g. the phone went to sleep). If the first attempt already created the
+    // share, the upload sessions are gone, so return the existing share
+    // instead of failing with "not found or not completed".
+    $uploadBatchId = $user->id . ':' . $request->upload_id;
+    $existingShare = Share::where('upload_batch_id', $uploadBatchId)->first();
+    if ($existingShare) {
+      return response()->json([
+        'status' => 'success',
+        'message' => 'Share created',
+        'data' => [
+          'share' => $existingShare
+        ]
+      ]);
     }
 
     // Generate a unique long ID for the share
@@ -237,7 +253,8 @@ class UploadsController extends Controller
       'size' => $totalSize,
       'file_count' => $fileCount,
       'status' => 'pending',
-      'password' => $password ? Hash::make($password) : null
+      'password' => $password ? Hash::make($password) : null,
+      'upload_batch_id' => $uploadBatchId
     ]);
 
     // Create a mapping from upload_id to file for path lookup (for non-bundle uploads)

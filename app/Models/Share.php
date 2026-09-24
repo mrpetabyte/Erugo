@@ -24,7 +24,8 @@ class Share extends Model
     'require_email',
     'expires_at',
     'status',
-    'password'
+    'password',
+    'upload_batch_id'
   ];
 
   protected $casts = [
@@ -41,6 +42,7 @@ class Share extends Model
   protected $hidden = [
     'path',
     'user_id',
+    'upload_batch_id',
   ];
 
   public function files()
